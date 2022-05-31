@@ -50,7 +50,7 @@ class SkusJSHandler : public gin::Wrappable<SkusJSHandler> {
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
 
-  // window.brave.skus.refresh_order
+  // window.chrome.braveSkus.refresh_order
   v8::Local<v8::Promise> RefreshOrder(v8::Isolate* isolate,
                                       std::string order_id);
   void OnRefreshOrder(v8::Global<v8::Promise::Resolver> promise_resolver,
@@ -58,7 +58,7 @@ class SkusJSHandler : public gin::Wrappable<SkusJSHandler> {
                       v8::Global<v8::Context> context_old,
                       const std::string& response);
 
-  // window.brave.skus.fetch_order_credentials
+  // window.chrome.braveSkus.fetch_order_credentials
   v8::Local<v8::Promise> FetchOrderCredentials(v8::Isolate* isolate,
                                                std::string order_id);
   void OnFetchOrderCredentials(
@@ -67,7 +67,7 @@ class SkusJSHandler : public gin::Wrappable<SkusJSHandler> {
       v8::Global<v8::Context> context_old,
       const std::string& response);
 
-  // window.brave.skus.prepare_credentials_presentation
+  // window.chrome.braveSkus.prepare_credentials_presentation
   v8::Local<v8::Promise> PrepareCredentialsPresentation(v8::Isolate* isolate,
                                                         std::string domain,
                                                         std::string path);
@@ -77,13 +77,22 @@ class SkusJSHandler : public gin::Wrappable<SkusJSHandler> {
       v8::Global<v8::Context> context_old,
       const std::string& response);
 
-  // window.brave.skus.credential_summary
+  // window.chrome.braveSkus.credential_summary
   v8::Local<v8::Promise> CredentialSummary(v8::Isolate* isolate,
                                            std::string domain);
   void OnCredentialSummary(v8::Global<v8::Promise::Resolver> promise_resolver,
                            v8::Isolate* isolate,
                            v8::Global<v8::Context> context_old,
                            const std::string& response);
+
+  // window.chrome.braveSkus.submit_receipt
+  v8::Local<v8::Promise> SubmitReceipt(v8::Isolate* isolate,
+                                       std::string order_id,
+                                       std::string receipt);
+  void OnSubmitReceipt(v8::Global<v8::Promise::Resolver> promise_resolver,
+                       v8::Isolate* isolate,
+                       v8::Global<v8::Context> context_old,
+                       const std::string& response);
 
   content::RenderFrame* render_frame_;
   mojo::Remote<skus::mojom::SkusService> skus_service_;
