@@ -3,13 +3,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "brave/browser/brave_rewards/rewards_service_factory.h"
+
 #include <memory>
 #include <utility>
 
-#include "brave/browser/brave_rewards/rewards_service_factory.h"
-
+#include "brave/browser/brave_rewards/rewards_context_utils.h"
 #include "brave/browser/profiles/brave_profile_manager.h"
-#include "brave/browser/profiles/profile_util.h"
 #include "brave/components/brave_rewards/browser/rewards_notification_service_observer.h"
 #include "brave/components/brave_rewards/browser/rewards_service.h"
 #include "brave/components/brave_rewards/browser/rewards_service_impl.h"
@@ -50,10 +50,6 @@ RewardsService* RewardsServiceFactory::GetForProfile(
     return testing_service_;
   }
 
-  if (!brave::IsRegularProfile(profile)) {
-    return nullptr;
-  }
-
   return static_cast<RewardsService*>(
       GetInstance()->GetServiceForBrowserContext(profile, true));
 }
@@ -77,6 +73,10 @@ RewardsServiceFactory::RewardsServiceFactory()
 
 KeyedService* RewardsServiceFactory::BuildServiceInstanceFor(
     content::BrowserContext* context) const {
+  if (!IsRewardsAllowedForContext(context)) {
+    return nullptr;
+  }
+
   std::unique_ptr<RewardsServiceObserver> extension_observer = nullptr;
   std::unique_ptr<RewardsServicePrivateObserver> private_observer = nullptr;
   std::unique_ptr<RewardsNotificationServiceObserver> notification_observer =
