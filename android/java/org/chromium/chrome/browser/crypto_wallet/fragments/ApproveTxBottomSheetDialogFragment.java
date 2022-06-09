@@ -96,7 +96,7 @@ public class ApproveTxBottomSheetDialogFragment extends BottomSheetDialogFragmen
         mExecutor = Executors.newSingleThreadExecutor();
         mHandler = new Handler(Looper.getMainLooper());
         mChainSymbol = "ETH";
-        mChainDecimals = 18;
+        mChainDecimals = Utils.ETH_DEFAULT_DECIMALS;
         mTransactionInfos = Collections.emptyList();
     }
 
@@ -202,7 +202,7 @@ public class ApproveTxBottomSheetDialogFragment extends BottomSheetDialogFragmen
                 networkName.setText(
                         Utils.getNetworkText(getActivity(), chainId, customNetworks).toString());
                 String chainSymbol = "ETH";
-                int chainDecimals = 18;
+                int chainDecimals = Utils.ETH_DEFAULT_DECIMALS;
                 for (NetworkInfo chain : chains) {
                     if (chainId.equals(chain.chainId)) {
                         if (Utils.isCustomNetwork(chainId)) {

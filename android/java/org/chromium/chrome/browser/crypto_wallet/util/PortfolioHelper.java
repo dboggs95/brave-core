@@ -17,8 +17,11 @@ import org.chromium.brave_wallet.mojom.BlockchainToken;
 import org.chromium.brave_wallet.mojom.BraveWalletService;
 import org.chromium.brave_wallet.mojom.CoinType;
 import org.chromium.brave_wallet.mojom.JsonRpcService;
+import org.chromium.brave_wallet.mojom.NetworkInfo;
 import org.chromium.brave_wallet.mojom.ProviderError;
+import org.chromium.chrome.browser.crypto_wallet.util.AssetsPricesHelper;
 import org.chromium.chrome.browser.crypto_wallet.util.AsyncUtils;
+import org.chromium.chrome.browser.crypto_wallet.util.BalanceHelper;
 import org.chromium.chrome.browser.crypto_wallet.util.TokenUtils;
 import org.chromium.chrome.browser.crypto_wallet.util.Utils;
 import org.chromium.mojo_base.mojom.TimeDelta;
@@ -33,7 +36,7 @@ public class PortfolioHelper {
     private BraveWalletService mBraveWalletService;
     private AssetRatioService mAssetRatioService;
     private JsonRpcService mJsonRpcService;
-    private String mChainId;
+    private NetworkInfo mSelectedNetwork;
     private AccountInfo[] mAccountInfos;
 
     // Data supplied as result
@@ -56,9 +59,9 @@ public class PortfolioHelper {
         mAccountInfos = accountInfos;
     }
 
-    public void setChainId(String chainId) {
-        assert chainId != null && !chainId.isEmpty();
-        mChainId = chainId;
+    public void setSelectedNetwork(NetworkInfo selectedNetwork) {
+        assert selectedNetwork != null;
+        mSelectedNetwork = selectedNetwork;
     }
 
     public void setFiatHistoryTimeframe(int timeframe) {
@@ -99,7 +102,7 @@ public class PortfolioHelper {
         return true;
     }
 
-    public Double getMostPreviousFiatSum() {
+    public Double getMostRecentFiatSum() {
         if (mFiatHistory == null || mFiatHistory.length == 0) {
             return 0.0d;
         }
@@ -109,151 +112,38 @@ public class PortfolioHelper {
     public void calculateBalances(Runnable runWhenDone) {
         resetResultData();
 
-        TokenUtils.getUserAssetsFiltered(
-                mBraveWalletService, mChainId, TokenUtils.TokenType.ALL, (userAssets) -> {
+        TokenUtils.getUserAssetsFiltered(mBraveWalletService, mSelectedNetwork.chainId,
+                TokenUtils.TokenType.ALL, (userAssets) -> {
                     mUserAssets = userAssets;
 
-                    AsyncUtils.MultiResponseHandler balancesMultiResponse =
-                            new AsyncUtils.MultiResponseHandler(
-                                    mAccountInfos.length * mUserAssets.length);
+                    AssetsPricesHelper.fetchPrices(mAssetRatioService, mUserAssets, assetPrices -> {
+                        BalanceHelper.getBlockchainTokensBalances(mJsonRpcService, mSelectedNetwork,
+                                        mAccountInfos, mUserAssets, blockchainTokensBalances -> {
+                            // Sum accross accounts
+                            for (AccountInfo accountInfo : mAccountInfos) {
+                                HashMap<String, Double> thisAccountTokensBalances =
+                                    Utils.getOrDefault(blockchainTokensBalances,
+                                    accountInfo.address.toLowerCase(Locale.getDefault()),
+                                    new HashMap<String, Double>());
+                                for (BlockchainToken userAsset : mUserAssets) {
+                                    String currentAssetKey = Utils.tokenToString(userAsset);
+                                    double prevTokenCryptoBalanceSum =
+                                        Utils.getOrDefault(mPerTokenCryptoSum, currentAssetKey, 0.0d);
+                                    double thisCryptoBalance = Utils.getOrDefault(
+                                        thisAccountTokensBalances, currentAssetKey, 0.0d);
+                                    mPerTokenCryptoSum.put(currentAssetKey,
+                                            prevTokenCryptoBalanceSum + thisCryptoBalance);
 
-                    ArrayList<AsyncUtils.GetBalanceResponseBaseContext> contexts =
-                            new ArrayList<AsyncUtils.GetBalanceResponseBaseContext>();
+                                    double prevTokenFiatBalanceSum =
+                                        Utils.getOrDefault(mPerTokenFiatSum, currentAssetKey, 0.0d);
+                                    double thisTokenPrice = Utils.getOrDefault(assetPrices,
+                                        userAsset.symbol.toLowerCase(Locale.getDefault()), 0.0d);
+                                    double thisFiatBalance = thisTokenPrice * thisCryptoBalance;
+                                    mPerTokenFiatSum.put(currentAssetKey,
+                                        prevTokenFiatBalanceSum + thisFiatBalance);
 
-                    // Tokens balances
-                    for (AccountInfo accountInfo : mAccountInfos) {
-                        for (BlockchainToken userAsset : mUserAssets) {
-                            if (userAsset.contractAddress.isEmpty()) {
-                                AsyncUtils.GetBalanceResponseContext context =
-                                        new AsyncUtils.GetBalanceResponseContext(
-                                                balancesMultiResponse.singleResponseComplete);
-                                context.userAsset = userAsset;
-                                contexts.add(context);
-                                mJsonRpcService.getBalance(
-                                        accountInfo.address, CoinType.ETH, mChainId, context);
-                            } else if (userAsset.isErc721) {
-                                AsyncUtils.GetErc721TokenBalanceResponseContext context =
-                                        new AsyncUtils.GetErc721TokenBalanceResponseContext(
-                                                balancesMultiResponse.singleResponseComplete);
-                                context.userAsset = userAsset;
-                                contexts.add(context);
-                                mJsonRpcService.getErc721TokenBalance(
-                                        Utils.getContractAddress(mChainId, userAsset.symbol,
-                                                userAsset.contractAddress),
-                                        userAsset.tokenId, accountInfo.address, mChainId, context);
-                            } else {
-                                AsyncUtils.GetErc20TokenBalanceResponseContext context =
-                                        new AsyncUtils.GetErc20TokenBalanceResponseContext(
-                                                balancesMultiResponse.singleResponseComplete);
-                                context.userAsset = userAsset;
-                                contexts.add(context);
-                                mJsonRpcService.getErc20TokenBalance(
-                                        Utils.getContractAddress(mChainId, userAsset.symbol,
-                                                userAsset.contractAddress),
-                                        accountInfo.address, mChainId, context);
-                            }
-                        }
-                    }
-
-                    balancesMultiResponse.setWhenAllCompletedAction(() -> {
-                        for (AsyncUtils.GetBalanceResponseBaseContext context : contexts) {
-                            String currentAssetSymbol =
-                                    context.userAsset.symbol.toLowerCase(Locale.getDefault());
-                            String currentAssetKey = context.userAsset.isErc721
-                                    ? Utils.formatErc721TokenTitle(
-                                            currentAssetSymbol, context.userAsset.tokenId)
-                                    : currentAssetSymbol;
-
-                            // Update crypto balances first
-                            int decimals =
-                                    (context.userAsset.decimals != 0 || context.userAsset.isErc721)
-                                    ? context.userAsset.decimals
-                                    : 18;
-                            Double thisBalanceCryptoPart = (context.error == ProviderError.SUCCESS)
-                                    ? fromHexWei(context.balance, decimals)
-                                    : 0.0d;
-
-                            Double prevThisTokenCryptoSum =
-                                    Utils.getOrDefault(mPerTokenCryptoSum, currentAssetKey, 0.0d);
-                            mPerTokenCryptoSum.put(currentAssetKey,
-                                    prevThisTokenCryptoSum + thisBalanceCryptoPart);
-                        }
-
-                        // Now check price ratio
-                        HashMap<String, Double> tokenToUsdRatios = new HashMap<String, Double>();
-
-                        // Filter assets
-                        ArrayList<BlockchainToken> updateTokens = new ArrayList<BlockchainToken>();
-                        for (BlockchainToken userAsset : mUserAssets) {
-                            String assetSymbol = userAsset.symbol.toLowerCase(Locale.getDefault());
-                            Double currentAssetBalance =
-                                    Utils.getOrDefault(mPerTokenCryptoSum, assetSymbol, 0.0d);
-
-                            // Skip 0
-                            if (currentAssetBalance == 0.0d) continue;
-
-                            updateTokens.add(userAsset);
-                        }
-
-                        AsyncUtils.MultiResponseHandler pricesMultiResponse =
-                                new AsyncUtils.MultiResponseHandler(updateTokens.size());
-                        ArrayList<AsyncUtils.GetPriceResponseContext> pricesContexts =
-                                new ArrayList<AsyncUtils.GetPriceResponseContext>();
-
-                        for (BlockchainToken userAsset : updateTokens) {
-                            String[] fromAssets = new String[] {
-                                    userAsset.symbol.toLowerCase(Locale.getDefault())};
-                            String[] toAssets = new String[] {"usd"};
-
-                            AsyncUtils.GetPriceResponseContext priceContext =
-                                    new AsyncUtils.GetPriceResponseContext(
-                                            pricesMultiResponse.singleResponseComplete);
-
-                            pricesContexts.add(priceContext);
-
-                            mAssetRatioService.getPrice(
-                                    fromAssets, toAssets, AssetPriceTimeframe.LIVE, priceContext);
-                        }
-
-                        pricesMultiResponse.setWhenAllCompletedAction(() -> {
-                            for (AsyncUtils.GetPriceResponseContext priceContext : pricesContexts) {
-                                if (!priceContext.success) {
-                                    continue;
+                                    mTotalFiatSum += thisFiatBalance;
                                 }
-
-                                assert priceContext.prices.length == 1;
-
-                                Double usdPerToken = 0.0d;
-                                try {
-                                    usdPerToken = Double.parseDouble(priceContext.prices[0].price);
-                                } catch (NullPointerException | NumberFormatException ex) {
-                                    Log.e(TAG,
-                                            "Cannot parse " + priceContext.prices[0].price + ", "
-                                                    + ex);
-                                    return;
-                                }
-                                tokenToUsdRatios.put(priceContext.prices[0].fromAsset.toLowerCase(
-                                                             Locale.getDefault()),
-                                        usdPerToken);
-                            }
-
-                            // Update total fiat sum
-                            for (BlockchainToken userAsset : mUserAssets) {
-                                String currentAssetSymbol =
-                                        userAsset.symbol.toLowerCase(Locale.getDefault());
-                                String currentAssetKey = userAsset.isErc721
-                                        ? Utils.formatErc721TokenTitle(
-                                                currentAssetSymbol, userAsset.tokenId)
-                                        : currentAssetSymbol;
-                                Double usdPerThisToken = Utils.getOrDefault(
-                                        tokenToUsdRatios, currentAssetSymbol, 0.0d);
-                                Double currentAssetBalance = Utils.getOrDefault(
-                                        mPerTokenCryptoSum, currentAssetKey, 0.0d);
-                                Double thisTokenFiatSum = usdPerThisToken * currentAssetBalance;
-
-                                mPerTokenFiatSum.put(currentAssetKey, thisTokenFiatSum);
-
-                                mTotalFiatSum += thisTokenFiatSum;
                             }
 
                             runWhenDone.run();

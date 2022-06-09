@@ -154,10 +154,8 @@ public class AccountDetailActivity
                     accountInfos[0] = accountInfo;
                     WalletListItemModel thisAccountItemModel = new WalletListItemModel(
                             R.drawable.ic_eth, mName, mAddress, null, null, mIsImported);
-                    Utils.setUpTransactionList(accountInfos, mAssetRatioService, mTxService,
-                            mBlockchainRegistry, mBraveWalletService, thisAccountItemModel,
-                            findViewById(R.id.rv_transactions), this, this, mJsonRpcService,
-                            mWalletTxCoinAdapter);
+                    Utils.setUpTransactionList(this, accountInfos, thisAccountItemModel,
+                            findViewById(R.id.rv_transactions), this, mWalletTxCoinAdapter);
                     break;
                 }
             }

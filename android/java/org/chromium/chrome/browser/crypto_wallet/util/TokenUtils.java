@@ -5,6 +5,7 @@
 
 package org.chromium.chrome.browser.crypto_wallet.util;
 
+import org.chromium.base.Callback;
 import org.chromium.brave_wallet.mojom.BlockchainRegistry;
 import org.chromium.brave_wallet.mojom.BlockchainToken;
 import org.chromium.brave_wallet.mojom.BraveWalletConstants;
@@ -126,5 +127,26 @@ public class TokenUtils {
         }
 
         return false;
+    }
+
+    public static void getExactUserAsset(BraveWalletService braveWalletService, String chainId,
+            String assetSymbol, String assetName, String assetId, String contractAddress,
+            int assetDecimals, Callback<BlockchainToken> callback) {
+        getUserAssetsFiltered(
+                braveWalletService, chainId, TokenUtils.TokenType.ALL, (userAssets) -> {
+                    BlockchainToken resultToken = null;
+                    for (BlockchainToken userAsset : userAssets) {
+                        if (chainId.equals(userAsset.chainId)
+                                && assetSymbol.equals(userAsset.symbol)
+                                && assetName.equals(userAsset.name)
+                                && (assetId.isEmpty() || assetId.equals(userAsset.tokenId))
+                                && contractAddress.equals(userAsset.contractAddress)
+                                && assetDecimals == userAsset.decimals) {
+                            resultToken = userAsset;
+                        }
+                    }
+
+                    callback.onResult(resultToken);
+                });
     }
 }

@@ -420,7 +420,7 @@ public class BuySendSwapActivity extends BraveWalletBaseActivity
 
     private void updateSwapControls(
             SwapResponse response, boolean calculatePerSellAsset, String errorResponse) {
-        int decimals = 18;
+        int decimals = Utils.ETH_DEFAULT_DECIMALS;
         if (!calculatePerSellAsset) {
             if (mCurrentBlockchainToken != null) {
                 decimals = mCurrentBlockchainToken.decimals;
@@ -525,7 +525,7 @@ public class BuySendSwapActivity extends BraveWalletBaseActivity
             return;
         }
 
-        final double fee = gasLimit * Utils.fromWei(response.gasPrice, 18);
+        final double fee = gasLimit * Utils.fromWei(response.gasPrice, Utils.ETH_DEFAULT_DECIMALS);
         final double fromValue = valueFrom;
         assert mJsonRpcService != null;
         mJsonRpcService.getBalance(
@@ -533,7 +533,7 @@ public class BuySendSwapActivity extends BraveWalletBaseActivity
                 CoinType.ETH, mCurrentChainId, (balance, error, errorMessage) -> {
                     warnWhenError(TAG, "getBalance", error, errorMessage);
                     if (error == ProviderError.SUCCESS) {
-                        double currentBalance = Utils.fromHexWei(balance, 18);
+                        double currentBalance = Utils.fromHexWei(balance, Utils.ETH_DEFAULT_DECIMALS);
                         boolean noCurrentToken = mCurrentBlockchainToken == null
                                 || mCurrentBlockchainToken.contractAddress.isEmpty();
 
@@ -645,7 +645,7 @@ public class BuySendSwapActivity extends BraveWalletBaseActivity
         BlockchainToken token = from ? mCurrentBlockchainToken : mCurrentSwapToBlockchainToken;
         TextView textView = from ? mFromBalanceText : mToBalanceText;
 
-        int decimals = token != null ? token.decimals : 18;
+        int decimals = token != null ? token.decimals : Utils.ETH_DEFAULT_DECIMALS;
         double fromToBalance = Utils.fromHexWei(balance, decimals);
         String text = getText(R.string.crypto_wallet_balance) + " "
                 + String.format(Locale.getDefault(), "%.4f", fromToBalance);
@@ -895,7 +895,7 @@ public class BuySendSwapActivity extends BraveWalletBaseActivity
                 if (mCurrentBlockchainToken == null
                         || mCurrentBlockchainToken.contractAddress.isEmpty()) {
                     TxData data =
-                            Utils.getTxData("", "", "", to, Utils.toHexWei(value, 18), new byte[0]);
+                            Utils.getTxData("", "", "", to, Utils.toHexWei(value, Utils.ETH_DEFAULT_DECIMALS), new byte[0]);
                     sendTransaction(data, from, "", "");
                 } else if (mCurrentBlockchainToken.isErc20) {
                     addUnapprovedTransactionERC20(to,

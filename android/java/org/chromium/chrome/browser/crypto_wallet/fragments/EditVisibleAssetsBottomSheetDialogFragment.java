@@ -308,7 +308,7 @@ public class EditVisibleAssetsBottomSheetDialogFragment extends BottomSheetDialo
                 token.isErc20 = !isErc721;
                 token.isErc721 = isErc721;
                 token.symbol = tokenSymbolEdit.getText().toString();
-                token.decimals = 18;
+                token.decimals = Utils.ETH_DEFAULT_DECIMALS;
                 token.chainId = mChainId;
                 token.coin = CoinType.ETH;
                 try {
