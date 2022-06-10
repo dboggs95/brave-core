@@ -43,6 +43,10 @@
 #include "brave/components/ipfs/features.h"
 #endif
 
+#if !BUILDFLAG(IS_ANDROID)
+#include "brave/browser/ui/tabs/features.h"
+#endif
+
 using brave_shields::features::kBraveAdblockCnameUncloaking;
 using brave_shields::features::kBraveAdblockCollapseBlockedElements;
 using brave_shields::features::kBraveAdblockCookieListDefault;
@@ -318,6 +322,10 @@ const flags_ui::FeatureEntry::Choice kBraveSkusEnvChoices[] = {
      skus::kEnvDevelopment},
 };
 
+constexpr char kBraveVerticalTabsName[] = "Vertical tabs";
+constexpr char kBraveVerticalTabsDescription[] =
+    "Uses vertical tabs instead of tabstrip";
+
 }  // namespace
 
 }  // namespace flag_descriptions
@@ -460,6 +468,17 @@ const flags_ui::FeatureEntry::Choice kBraveSkusEnvChoices[] = {
 #define BRAVE_SHIELDS_FEATURE_ENTRIES
 #endif
 
+#if BUILDFLAG(IS_ANDROID)
+#define BRAVE_VERTICAL_TABS_FEATURE_ENTRY
+#else
+#define BRAVE_VERTICAL_TABS_FEATURE_ENTRY \
+    {kBraveVerticalTabsFeatureInternalName,  \
+    flag_descriptions::kBraveVerticalTabsName, \
+    flag_descriptions::kBraveVerticalTabsDescription, \
+    kOsWin, \
+    FEATURE_VALUE_TYPE(features::kBraveVerticalTabs)},
+#endif  // BUILDFLAG(IS_ANDROID)
+
 #define BRAVE_ABOUT_FLAGS_FEATURE_ENTRIES                                   \
     {"use-dev-updater-url",                                                 \
      flag_descriptions::kUseDevUpdaterUrlName,                              \
@@ -583,5 +602,6 @@ const flags_ui::FeatureEntry::Choice kBraveSkusEnvChoices[] = {
     BRAVE_VPN_FEATURE_ENTRIES                                               \
     BRAVE_SKU_SDK_FEATURE_ENTRIES                                           \
     SPEEDREADER_FEATURE_ENTRIES                                             \
-    BRAVE_SHIELDS_FEATURE_ENTRIES                                        \
-    BRAVE_TRANSLATE_GO_FEATURE_ENTRIES
+    BRAVE_SHIELDS_FEATURE_ENTRIES                                           \
+    BRAVE_TRANSLATE_GO_FEATURE_ENTRIES                                      \
+    BRAVE_VERTICAL_TABS_FEATURE_ENTRY
