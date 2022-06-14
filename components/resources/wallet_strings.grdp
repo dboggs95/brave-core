@@ -490,4 +490,6 @@
   <message name="IDS_BRAVE_WALLET_SOLANA_MAX_RETRIES" desc="Name of Solana instruction 'programID' param">Max Retries:</message>  
   <message name="IDS_BRAVE_WALLET_SOLANA_PREFLIGHT_COMMITMENT" desc="Name of Solana instruction 'programID' param">Preflight Commitment:</message>  
   <message name="IDS_BRAVE_WALLET_SOLANA_SKIP_PREFLIGHT" desc="Name of Solana instruction 'programID' param">Skip Preflight:</message>  
+  <message name="IDS_BRAVE_WALLET_SELECT_CURRENCY" desc="Currency selector title">Select currency</message>
+  <message name="IDS_BRAVE_WALLET_SEARCH_CURRENCY" desc="Search placeholder for coin search input">Search currencies</message>
 </grit-part>
