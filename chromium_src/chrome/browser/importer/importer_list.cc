@@ -14,61 +14,57 @@
 
 namespace {
 void AddChromeToProfiles(std::vector<importer::SourceProfile>* profiles,
-                         base::ListValue* chrome_profiles,
+                         base::Value::List chrome_profiles,
                          const base::FilePath& user_data_folder,
                          const std::string& brand) {
-  for (const auto& value : chrome_profiles->GetList()) {
-    const base::DictionaryValue* dict;
-    if (!value.GetAsDictionary(&dict))
+  for (const auto& value : chrome_profiles) {
+    const auto* dict = value.GetIfDict();
+    if (!dict)
       continue;
     uint16_t items = importer::NONE;
-    std::string profile;
-    std::string name;
-    dict->GetString("id", &profile);
-    dict->GetString("name", &name);
+    auto* profile = dict->FindString("id");
+    auto* name = dict->FindString("name");
+    DCHECK(profile);
+    DCHECK(name);
     base::FilePath path = user_data_folder;
-    if (!ChromeImporterCanImport(path.Append(
-      base::FilePath::StringType(profile.begin(), profile.end())), &items))
+    if (!ChromeImporterCanImport(path.Append(base::FilePath::StringType(
+                                     profile->begin(), profile->end())),
+                                 &items))
       continue;
     importer::SourceProfile chrome;
     std::string importer_name(brand);
-    importer_name.append(name);
+    importer_name.append(*name);
     chrome.importer_name = base::UTF8ToUTF16(importer_name);
     chrome.importer_type = importer::TYPE_CHROME;
     chrome.services_supported = items;
-    chrome.source_path =
-      user_data_folder.Append(
-        base::FilePath::StringType(profile.begin(), profile.end()));
+    chrome.source_path = user_data_folder.Append(
+        base::FilePath::StringType(profile->begin(), profile->end()));
     profiles->push_back(chrome);
   }
-  delete chrome_profiles;
 }
 
 void DetectChromeProfiles(std::vector<importer::SourceProfile>* profiles) {
   base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
                                                 base::BlockingType::WILL_BLOCK);
   const base::FilePath chrome_user_data_folder = GetChromeUserDataFolder();
-  base::ListValue* chrome_profiles =
-      GetChromeSourceProfiles(chrome_user_data_folder);
+  auto chrome_profiles = GetChromeSourceProfiles(chrome_user_data_folder);
   const std::string brand_chrome("Chrome ");
-  AddChromeToProfiles(profiles, chrome_profiles, chrome_user_data_folder,
-                      brand_chrome);
+  AddChromeToProfiles(profiles, std::move(chrome_profiles),
+                      chrome_user_data_folder, brand_chrome);
 
 #if !BUILDFLAG(IS_LINUX)
   const base::FilePath canary_user_data_folder = GetCanaryUserDataFolder();
-  base::ListValue* canary_profiles =
-      GetChromeSourceProfiles(canary_user_data_folder);
+  auto canary_profiles = GetChromeSourceProfiles(canary_user_data_folder);
   const std::string brandCanary("Chrome Canary ");
-  AddChromeToProfiles(profiles, canary_profiles, canary_user_data_folder,
-                      brandCanary);
+  AddChromeToProfiles(profiles, std::move(canary_profiles),
+                      canary_user_data_folder, brandCanary);
 #endif
 
   const base::FilePath chromium_user_data_folder = GetChromiumUserDataFolder();
-  base::ListValue* chromium_profiles =
-      GetChromeSourceProfiles(chromium_user_data_folder);
+  auto chromium_profiles = GetChromeSourceProfiles(chromium_user_data_folder);
   const std::string brandChromium("Chromium ");
-  AddChromeToProfiles(profiles, chromium_profiles, chromium_user_data_folder,
-                      brandChromium);
+  AddChromeToProfiles(profiles, std::move(chromium_profiles),
+                      chromium_user_data_folder, brandChromium);
 }
 
 }  // namespace
