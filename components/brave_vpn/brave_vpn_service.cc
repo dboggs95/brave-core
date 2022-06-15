@@ -1306,4 +1306,13 @@ void BraveVpnService::GetSubscriberCredentialV12(
                {{"Brave-Payments-Environment", payments_environment}});
 }
 
+void BraveVpnService::GetPurchaseToken(GetPurchaseTokenCallback callback) {
+  // TODO(bsclifton): get the real purchase token
+
+  std::move(callback).Run(
+      "oohdhbmbebmciddpbcicgnko.AO-J1OxJGS6-"
+      "tNYvzofx7RO2hJSEgQmi6tOrLHEB4zJ2OhsyhX3mhEe4QKS0MVxtJCBNIAlBP5jAgDPqdXDN"
+      "z15JhIXt5QYcIExIxe5H5ifbhAsHILlUXlE");
+}
+
 }  // namespace brave_vpn
