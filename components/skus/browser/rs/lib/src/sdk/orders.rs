@@ -3,7 +3,8 @@ use core::convert::{TryFrom, TryInto};
 use chrono::{DateTime, Utc};
 use futures_retry::FutureRetry;
 use serde::{Deserialize, Serialize};
-use tracing::instrument;
+use std::str;
+use tracing::{event, instrument, Level};
 
 #[cfg(feature = "e2e_test")]
 use serde_json::{json, to_vec};
@@ -22,9 +23,7 @@ struct OrderMetadataResponse {
 
 impl From<OrderMetadataResponse> for OrderMetadata {
     fn from(order_metadata: OrderMetadataResponse) -> Self {
-        OrderMetadata {
-            stripe_checkout_session_id: order_metadata.stripe_checkout_session_id,
-        }
+        OrderMetadata { stripe_checkout_session_id: order_metadata.stripe_checkout_session_id }
     }
 }
 
@@ -100,11 +99,8 @@ impl TryFrom<OrderResponse> for Order {
         let total_price = order.total_price.parse::<f64>().map_err(|_| {
             InternalError::InvalidResponse("Could not parse total price".to_string())
         })?;
-        let items: Result<Vec<OrderItem>, _> = order
-            .items
-            .into_iter()
-            .map(|item| item.try_into())
-            .collect();
+        let items: Result<Vec<OrderItem>, _> =
+            order.items.into_iter().map(|item| item.try_into()).collect();
         Ok(Order {
             id: order.id,
             created_at: order.created_at.naive_utc(),
@@ -134,10 +130,7 @@ impl TryFrom<SubmitReceiptResponse> for SubmitReceipt {
     type Error = SkusError;
 
     fn try_from(sr_resp: SubmitReceiptResponse) -> Result<Self, Self::Error> {
-        Ok(SubmitReceipt {
-            external_id: sr_resp.external_id,
-            vendor: sr_resp.vendor,
-        })
+        Ok(SubmitReceipt { external_id: sr_resp.external_id, vendor: sr_resp.vendor })
     }
 }
 
@@ -148,9 +141,15 @@ where
     #[cfg(feature = "e2e_test")]
     pub async fn create_order(&self, kind: &str) -> Result<Order, SkusError> {
         let sku = match kind {
-            "trial" => "AgEVc2VhcmNoLmJyYXZlLnNvZnR3YXJlAh9zZWFyY2ggY2xvc2VkIGJldGEgcHJvZ3JhbSBkZW1vAAIWc2t1PXNlYXJjaC1iZXRhLWFjY2VzcwACB3ByaWNlPTAAAgxjdXJyZW5jeT1CQVQAAi1kZXNjcmlwdGlvbj1TZWFyY2ggY2xvc2VkIGJldGEgcHJvZ3JhbSBhY2Nlc3MAAhpjcmVkZW50aWFsX3R5cGU9c2luZ2xlLXVzZQAABiB3uXfAAkNSRQd24jSauRny3VM0BYZ8yOclPTEgPa0xrA==",
-            "paid" => "MDAyOWxvY2F0aW9uIHRvZ2V0aGVyLmJzZy5icmF2ZS5zb2Z0d2FyZQowMDMwaWRlbnRpZmllciBicmF2ZS10b2dldGhlci1wYWlkIHNrdSB0b2tlbiB2MQowMDIwY2lkIHNrdT1icmF2ZS10b2dldGhlci1wYWlkCjAwMTBjaWQgcHJpY2U9NQowMDE1Y2lkIGN1cnJlbmN5PVVTRAowMDQzY2lkIGRlc2NyaXB0aW9uPU9uZSBtb250aCBwYWlkIHN1YnNjcmlwdGlvbiBmb3IgQnJhdmUgVG9nZXRoZXIKMDAyNWNpZCBjcmVkZW50aWFsX3R5cGU9dGltZS1saW1pdGVkCjAwMjZjaWQgY3JlZGVudGlhbF92YWxpZF9kdXJhdGlvbj1QMU0KMDAyZnNpZ25hdHVyZSDKLJ7NuuzP3KdmTdVnn0dI3JmIfNblQKmY+WBJOqnQJAo=",
-            "beta" => "AgEVc2VhcmNoLmJyYXZlLnNvZnR3YXJlAh9zZWFyY2ggY2xvc2VkIGJldGEgcHJvZ3JhbSBkZW1vAAIWc2t1PXNlYXJjaC1iZXRhLWFjY2VzcwACB3ByaWNlPTAAAgxjdXJyZW5jeT1CQVQAAi1kZXNjcmlwdGlvbj1TZWFyY2ggY2xvc2VkIGJldGEgcHJvZ3JhbSBhY2Nlc3MAAhpjcmVkZW50aWFsX3R5cGU9c2luZ2xlLXVzZQAABiB3uXfAAkNSRQd24jSauRny3VM0BYZ8yOclPTEgPa0xrA==",
+            "trial" => {
+                "AgEVc2VhcmNoLmJyYXZlLnNvZnR3YXJlAh9zZWFyY2ggY2xvc2VkIGJldGEgcHJvZ3JhbSBkZW1vAAIWc2t1PXNlYXJjaC1iZXRhLWFjY2VzcwACB3ByaWNlPTAAAgxjdXJyZW5jeT1CQVQAAi1kZXNjcmlwdGlvbj1TZWFyY2ggY2xvc2VkIGJldGEgcHJvZ3JhbSBhY2Nlc3MAAhpjcmVkZW50aWFsX3R5cGU9c2luZ2xlLXVzZQAABiB3uXfAAkNSRQd24jSauRny3VM0BYZ8yOclPTEgPa0xrA=="
+            }
+            "paid" => {
+                "MDAyOWxvY2F0aW9uIHRvZ2V0aGVyLmJzZy5icmF2ZS5zb2Z0d2FyZQowMDMwaWRlbnRpZmllciBicmF2ZS10b2dldGhlci1wYWlkIHNrdSB0b2tlbiB2MQowMDIwY2lkIHNrdT1icmF2ZS10b2dldGhlci1wYWlkCjAwMTBjaWQgcHJpY2U9NQowMDE1Y2lkIGN1cnJlbmN5PVVTRAowMDQzY2lkIGRlc2NyaXB0aW9uPU9uZSBtb250aCBwYWlkIHN1YnNjcmlwdGlvbiBmb3IgQnJhdmUgVG9nZXRoZXIKMDAyNWNpZCBjcmVkZW50aWFsX3R5cGU9dGltZS1saW1pdGVkCjAwMjZjaWQgY3JlZGVudGlhbF92YWxpZF9kdXJhdGlvbj1QMU0KMDAyZnNpZ25hdHVyZSDKLJ7NuuzP3KdmTdVnn0dI3JmIfNblQKmY+WBJOqnQJAo="
+            }
+            "beta" => {
+                "AgEVc2VhcmNoLmJyYXZlLnNvZnR3YXJlAh9zZWFyY2ggY2xvc2VkIGJldGEgcHJvZ3JhbSBkZW1vAAIWc2t1PXNlYXJjaC1iZXRhLWFjY2VzcwACB3ByaWNlPTAAAgxjdXJyZW5jeT1CQVQAAi1kZXNjcmlwdGlvbj1TZWFyY2ggY2xvc2VkIGJldGEgcHJvZ3JhbSBhY2Nlc3MAAhpjcmVkZW50aWFsX3R5cGU9c2luZ2xlLXVzZQAABiB3uXfAAkNSRQd24jSauRny3VM0BYZ8yOclPTEgPa0xrA=="
+            }
             _ => "",
         };
 
@@ -230,19 +229,22 @@ where
         order_id: &str,
         receipt: &str,
     ) -> Result<SubmitReceipt, SkusError> {
+        event!(Level::DEBUG, order_id = order_id, "submit_receipt called");
         let request_with_retries = FutureRetry::new(
             || async {
                 let mut builder = http::Request::builder();
                 builder.method("POST");
-                builder.uri(format!(
-                    "{}/v1/orders/{}/submit-receipt",
-                    self.base_url, order_id
-                ));
+                builder.uri(format!("{}/v1/orders/{}/submit-receipt", self.base_url, order_id));
 
-                let receipt_bytes : Vec<u8> = receipt.as_bytes().to_vec();
+                let receipt_bytes: Vec<u8> = receipt.as_bytes().to_vec();
                 let req = builder.body(receipt_bytes).unwrap();
                 let resp = self.fetch(req).await?;
 
+                event!(
+                    Level::DEBUG,
+                    response = str::from_utf8(resp.body()).unwrap(),
+                    "submit_receipt called"
+                );
                 match resp.status() {
                     http::StatusCode::OK => Ok(resp),
                     http::StatusCode::NOT_FOUND => Err(InternalError::NotFound),
@@ -255,12 +257,12 @@ where
 
         let sr_resp: SubmitReceiptResponse = serde_json::from_slice(resp.body())?;
         let sr_resp: SubmitReceipt = sr_resp.try_into()?;
-
         Ok(sr_resp)
     }
 
     #[instrument]
     pub async fn refresh_order(&self, order_id: &str) -> Result<Order, SkusError> {
+        event!(Level::DEBUG, order_id = order_id, "refresh_order called",);
         let order = self.fetch_order(order_id).await?;
         self.client.upsert_order(&order).await?;
         Ok(order)
