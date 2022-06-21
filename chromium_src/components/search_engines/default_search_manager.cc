@@ -14,6 +14,10 @@ bool IsDefaultSearchProviderByExtension(PrefService* pref_service) {
 #if BUILDFLAG(IS_ANDROID)
   return false;
 #endif
+  // This pref isn't present in Chromium tests
+  if (!pref_service->FindPreference(prefs::kDefaultSearchProviderByExtension)) {
+    return false;
+  }
   return pref_service->GetBoolean(prefs::kDefaultSearchProviderByExtension);
 }
 
