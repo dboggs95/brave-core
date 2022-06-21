@@ -47,13 +47,19 @@ BraveExtensionManagement::BraveExtensionManagement(Profile* profile)
   extension_registry_observer_.Observe(
       ExtensionRegistry::Get(static_cast<content::BrowserContext*>(profile)));
   providers_.push_back(std::make_unique<BraveExtensionProvider>());
-  local_state_pref_change_registrar_.Init(g_browser_process->local_state());
+  auto* local_state = g_browser_process->local_state();
+  // In tests local_state can be null.
+  if (!local_state) {
+    DCHECK(profile->AsTestingProfile());
+  } else {
+    local_state_pref_change_registrar_.Init(local_state);
 #if BUILDFLAG(ENABLE_TOR)
-  local_state_pref_change_registrar_.Add(
-      tor::prefs::kTorDisabled,
-      base::BindRepeating(&BraveExtensionManagement::OnTorDisabledChanged,
-                          base::Unretained(this)));
+    local_state_pref_change_registrar_.Add(
+        tor::prefs::kTorDisabled,
+        base::BindRepeating(&BraveExtensionManagement::OnTorDisabledChanged,
+                            base::Unretained(this)));
 #endif
+  }
   // Make IsInstallationExplicitlyAllowed to be true
 #if BUILDFLAG(ETHEREUM_REMOTE_CLIENT_ENABLED)
   AccessById(ethereum_remote_client_extension_id)->installation_mode =

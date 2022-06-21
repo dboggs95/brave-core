@@ -36,16 +36,23 @@ TorProfileServiceFactory* TorProfileServiceFactory::GetInstance() {
 
 // static
 void TorProfileServiceFactory::SetTorDisabled(bool disabled) {
-  if (g_browser_process)
-    g_browser_process->local_state()->SetBoolean(tor::prefs::kTorDisabled,
-                                                 disabled);
+  if (g_browser_process) {
+    auto* local_state = g_browser_process->local_state();
+    if (local_state) {
+      local_state->SetBoolean(tor::prefs::kTorDisabled, disabled);
+    }
+  }
 }
 
 // static
 bool TorProfileServiceFactory::IsTorDisabled() {
-  if (g_browser_process)
-    return g_browser_process->local_state()->GetBoolean(
-        tor::prefs::kTorDisabled);
+  if (g_browser_process) {
+    auto* local_state = g_browser_process->local_state();
+    if (!local_state) {
+      return false;
+    }
+    return local_state->GetBoolean(tor::prefs::kTorDisabled);
+  }
   return false;
 }
 
