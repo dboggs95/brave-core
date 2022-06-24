@@ -167,7 +167,7 @@ void BraveWalletPermissionContext::RequestPermissions(
 
   auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
   // Fail the request came from 3p origin.
-  if (web_contents->GetMainFrame()->GetLastCommittedOrigin() !=
+  if (web_contents->GetPrimaryMainFrame()->GetLastCommittedOrigin() !=
       rfh->GetLastCommittedOrigin()) {
     std::move(callback).Run(std::vector<blink::mojom::PermissionStatus>());
     return;
@@ -215,14 +215,14 @@ void BraveWalletPermissionContext::GetAllowedAccounts(
 
   auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
   // Fail the request came from 3p origin.
-  if (web_contents->GetMainFrame()->GetLastCommittedOrigin() !=
+  if (web_contents->GetPrimaryMainFrame()->GetLastCommittedOrigin() !=
       rfh->GetLastCommittedOrigin()) {
     std::move(callback).Run(false, std::vector<std::string>());
     return;
   }
 
   // Fail if there is no last committed URL yet
-  if (web_contents->GetMainFrame()->GetLastCommittedURL().is_empty()) {
+  if (web_contents->GetPrimaryMainFrame()->GetLastCommittedURL().is_empty()) {
     std::move(callback).Run(true, std::vector<std::string>());
     return;
   }
