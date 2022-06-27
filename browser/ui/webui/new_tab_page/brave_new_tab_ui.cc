@@ -20,6 +20,7 @@
 #include "brave/components/brave_today/common/features.h"
 #include "brave/components/l10n/common/locale_util.h"
 #include "brave/components/ntp_background_images/browser/ntp_custom_images_source.h"
+#include "build/build_config.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/common/pref_names.h"
 #include "components/grit/brave_components_resources.h"
@@ -43,6 +44,9 @@ BraveNewTabUI::BraveNewTabUI(content::WebUI* web_ui, const std::string& name)
     content::WebUIDataSource* source =
         content::WebUIDataSource::Create(name);
     source->SetDefaultResource(IDR_BRAVE_BLANK_NEW_TAB_HTML);
+#if defined(TOOLKIT_VIEWS)
+    AddBackgroundColorToSource(source, web_ui->GetWebContents());
+#endif  // defined(TOOLKIT_VIEWS)
     content::WebUIDataSource::Add(profile, source);
     return;
   }
@@ -51,6 +55,11 @@ BraveNewTabUI::BraveNewTabUI(content::WebUI* web_ui, const std::string& name)
   content::WebUIDataSource* source = CreateAndAddWebUIDataSource(
       web_ui, name, kBraveNewTabGenerated, kBraveNewTabGeneratedSize,
       IDR_BRAVE_NEW_TAB_HTML);
+
+#if defined(TOOLKIT_VIEWS)
+  AddBackgroundColorToSource(source, web_ui->GetWebContents());
+#endif  // defined(TOOLKIT_VIEWS)
+
   source->AddBoolean("featureCustomBackgroundEnabled",
                      !profile->GetPrefs()->IsManagedPreference(
                          prefs::kNtpCustomBackgroundDict));
