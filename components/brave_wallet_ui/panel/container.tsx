@@ -83,7 +83,6 @@ function Container () {
     selectedPendingTransaction,
     isWalletLocked,
     favoriteApps,
-    hasIncorrectPassword,
     hasInitialized,
     isWalletCreated,
     networkList,
@@ -157,13 +156,6 @@ function Container () {
     }
   }, [selectedPanel, defaultAccounts, connectingAccounts, accounts])
 
-  React.useEffect(() => {
-    if (hasIncorrectPassword) {
-      // Clear the incorrect password
-      setInputValue('')
-    }
-  }, [hasIncorrectPassword])
-
   const onChangeSendView = (view: BuySendSwapViewTypes) => {
     if (view === 'assets') {
       setShowSelectAsset(true)
@@ -207,7 +199,6 @@ function Container () {
     )
     setSelectedAccounts(newList)
   }
-  const [inputValue, setInputValue] = React.useState<string>('')
   const onSubmit = () => {
     dispatch(WalletPanelActions.connectToSite({ selectedAccounts }))
   }
@@ -229,16 +220,9 @@ function Container () {
       setReadyToConnect(false)
     }
   }
-  const unlockWallet = () => {
-    dispatch(WalletActions.unlockWallet({ password: inputValue }))
-    setInputValue('')
-  }
 
-  const handlePasswordChanged = (value: string) => {
-    setInputValue(value)
-    if (hasIncorrectPassword) {
-      dispatch(WalletActions.hasIncorrectPassword(false))
-    }
+  const unlockWallet = (password: string) => {
+    dispatch(WalletActions.unlockWallet({ password }))
   }
 
   const onRestore = () => {
@@ -502,11 +486,7 @@ function Container () {
       <PanelWrapper isLonger={false}>
         <StyledExtensionWrapper>
           <LockPanel
-            value={inputValue}
-            hasPasswordError={hasIncorrectPassword}
             onSubmit={unlockWallet}
-            disabled={inputValue === ''}
-            onPasswordChanged={handlePasswordChanged}
             onClickRestore={onRestore}
           />
         </StyledExtensionWrapper>
