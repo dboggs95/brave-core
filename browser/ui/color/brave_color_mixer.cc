@@ -5,6 +5,7 @@
 
 #include "brave/browser/ui/color/brave_color_mixer.h"
 
+#include "brave/browser/themes/brave_theme_helper_utils.h"
 #include "brave/browser/ui/color/color_palette.h"
 #include "chrome/browser/ui/color/chrome_color_id.h"
 #include "ui/color/color_id.h"
@@ -43,6 +44,23 @@ void AddBraveLightThemeColorMixer(ui::ColorProvider* provider,
 
   mixer[kColorToolbarButtonIconInactive] = {
       color_utils::AlphaBlend(kLightToolbarIcon, kLightToolbar, 0.3f)};
+
+#if !BUILDFLAG(IS_ANDROID)
+  mixer[kColorOmniboxBackground] = {GetLocationBarBackground(
+      /*dark*/ false, /*private*/ false, /*hover*/ false)};
+  mixer[kColorOmniboxBackgroundHovered] = {GetLocationBarBackground(
+      /*dark*/ false, /*private*/ false, /*hover*/ true)};
+  mixer[kColorOmniboxText] = {kLightOmniboxText};
+
+  mixer[kColorOmniboxResultsBackground] = {GetOmniboxResultBackground(
+      kColorOmniboxResultsBackground, /*dark*/ false, /*incognito*/ false)};
+  mixer[kColorOmniboxResultsBackgroundHovered] = {
+      GetOmniboxResultBackground(kColorOmniboxResultsBackgroundHovered,
+                                 /*dark*/ false, /*incognito*/ false)};
+  mixer[kColorOmniboxResultsBackgroundSelected] = {
+      GetOmniboxResultBackground(kColorOmniboxResultsBackgroundSelected,
+                                 /*dark*/ false, /*incognito*/ false)};
+#endif  // #if !BUILDFLAG(IS_ANDROID)
 }
 
 void AddBraveDarkThemeColorMixer(ui::ColorProvider* provider,
@@ -78,6 +96,23 @@ void AddBraveDarkThemeColorMixer(ui::ColorProvider* provider,
 
   mixer[kColorToolbarButtonIconInactive] = {
       color_utils::AlphaBlend(kDarkToolbarIcon, kDarkToolbar, 0.3f)};
+
+#if !BUILDFLAG(IS_ANDROID)
+  mixer[kColorOmniboxBackground] = {GetLocationBarBackground(
+      /*dark*/ true, /*private*/ false, /*hover*/ false)};
+  mixer[kColorOmniboxBackgroundHovered] = {GetLocationBarBackground(
+      /*dark*/ true, /*private*/ false, /*hover*/ true)};
+  mixer[kColorOmniboxText] = {kDarkOmniboxText};
+
+  mixer[kColorOmniboxResultsBackground] = {GetOmniboxResultBackground(
+      kColorOmniboxResultsBackground, /*dark*/ true, /*incognito*/ false)};
+  mixer[kColorOmniboxResultsBackgroundHovered] = {
+      GetOmniboxResultBackground(kColorOmniboxResultsBackgroundHovered,
+                                 /*dark*/ true, /*incognito*/ false)};
+  mixer[kColorOmniboxResultsBackgroundSelected] = {
+      GetOmniboxResultBackground(kColorOmniboxResultsBackgroundSelected,
+                                 /*dark*/ true, /*incognito*/ false)};
+#endif  // #if !BUILDFLAG(IS_ANDROID)
 }
 
 void AddBravePrivateThemeColorMixer(ui::ColorProvider* provider,
@@ -110,6 +145,23 @@ void AddBravePrivateThemeColorMixer(ui::ColorProvider* provider,
   mixer[kColorToolbarButtonIcon] = {kDarkToolbarIcon};
   mixer[kColorToolbarButtonIconInactive] = {
       color_utils::AlphaBlend(kDarkToolbarIcon, kPrivateToolbar, 0.3f)};
+
+#if !BUILDFLAG(IS_ANDROID)
+  mixer[kColorOmniboxBackground] = {GetLocationBarBackground(
+      /*dark*/ false, /*private*/ true, /*hover*/ false)};
+  mixer[kColorOmniboxBackgroundHovered] = {GetLocationBarBackground(
+      /*dark*/ false, /*private*/ true, /*hover*/ true)};
+  mixer[kColorOmniboxText] = {kDarkOmniboxText};
+
+  mixer[kColorOmniboxResultsBackground] = {GetOmniboxResultBackground(
+      kColorOmniboxResultsBackground, /*dark*/ false, /*incognito*/ true)};
+  mixer[kColorOmniboxResultsBackgroundHovered] = {
+      GetOmniboxResultBackground(kColorOmniboxResultsBackgroundHovered,
+                                 /*dark*/ false, /*incognito*/ true)};
+  mixer[kColorOmniboxResultsBackgroundSelected] = {
+      GetOmniboxResultBackground(kColorOmniboxResultsBackgroundSelected,
+                                 /*dark*/ false, /*incognito*/ true)};
+#endif  // #if !BUILDFLAG(IS_ANDROID)
 }
 
 void AddBraveTorThemeColorMixer(ui::ColorProvider* provider,

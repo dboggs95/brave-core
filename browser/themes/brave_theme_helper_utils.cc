@@ -7,6 +7,7 @@
 
 #include "base/numerics/safe_conversions.h"
 #include "chrome/browser/themes/theme_properties.h"
+#include "chrome/browser/ui/color/chrome_color_id.h"
 #include "chrome/browser/ui/omnibox/omnibox_theme.h"
 #include "ui/gfx/color_palette.h"
 #include "ui/gfx/color_utils.h"
@@ -44,9 +45,9 @@ SkColor GetOmniboxResultBackground(int id, bool dark, bool priv) {
   bool high_contrast =
       native_theme && native_theme->UserHasContrastPreference();
   OmniboxPartState state = OmniboxPartState::NORMAL;
-  if (id == ThemeProperties::COLOR_OMNIBOX_RESULTS_BG_HOVERED) {
+  if (id == kColorOmniboxResultsBackgroundHovered) {
     state = OmniboxPartState::HOVERED;
-  } else if (id == ThemeProperties::COLOR_OMNIBOX_RESULTS_BG_SELECTED) {
+  } else if (id == kColorOmniboxResultsBackgroundSelected) {
     state = OmniboxPartState::SELECTED;
   }
 
