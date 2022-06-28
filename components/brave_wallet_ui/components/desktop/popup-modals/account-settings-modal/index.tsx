@@ -17,10 +17,10 @@ import {
 } from '../../../../options/account-settings-nav-options'
 import { FILECOIN_FORMAT_DESCRIPTION_URL } from '../../../../common/constants/urls'
 import { reduceAddress } from '../../../../utils/reduce-address'
-import { copyToClipboard } from '../../../../utils/copy-to-clipboard'
 import { NavButton } from '../../../extension'
 import { Tooltip } from '../../../shared'
 import { getLocale, getLocaleWithTag } from '../../../../../common/locale'
+import { useCopy } from '../../../../common/hooks'
 
 // Styled Components
 import {
@@ -41,7 +41,6 @@ import {
 export interface Props {
   onClose: () => void
   onUpdateAccountName: (payload: UpdateAccountNamePayloadType) => { success: boolean }
-  onCopyToClipboard: () => void
   onChangeTab: (id: AccountSettingsNavTypes) => void
   onRemoveAccount: (address: string, hardware: boolean, coin: BraveWallet.CoinType) => void
   onViewPrivateKey: (address: string, isDefault: boolean, coin: BraveWallet.CoinType) => void
@@ -64,7 +63,6 @@ const AddAccountModal = (props: Props) => {
     onClose,
     onToggleNav,
     onUpdateAccountName,
-    onCopyToClipboard,
     onChangeTab,
     onRemoveAccount,
     onViewPrivateKey,
@@ -74,6 +72,10 @@ const AddAccountModal = (props: Props) => {
   const [showPrivateKey, setShowPrivateKey] = React.useState<boolean>(false)
   const [updateError, setUpdateError] = React.useState<boolean>(false)
   const [qrCode, setQRCode] = React.useState<string>('')
+
+  // custom hooks
+  const { copied: accountAddressCopied, copyText: copyAccountAddress } = useCopy()
+  const { copied: privateKeyCopied, copyText: copyPrivateKey } = useCopy()
 
   const handleAccountNameChanged = (event: React.ChangeEvent<HTMLInputElement>) => {
     setAccountName(event.target.value)
@@ -133,17 +135,21 @@ const AddAccountModal = (props: Props) => {
     onClose()
   }
 
-  const onCopyPrivateKey = async () => {
+  const onCopyPrivateKey = React.useCallback(async () => {
     if (privateKey) {
-      await copyToClipboard(privateKey)
+      await copyPrivateKey(privateKey)
     }
-  }
+  }, [privateKey, copyPrivateKey])
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter' && accountName) {
       onSubmitUpdateName()
     }
   }
+
+  const onCopyAccountAddress = React.useCallback(async () => {
+    await copyAccountAddress(account.address)
+  }, [account, copyAccountAddress])
 
   const tabList = React.useMemo((): TopTabNavObjectType[] => {
     return account.accountType === 'Trezor' ||
@@ -177,8 +183,12 @@ const AddAccountModal = (props: Props) => {
               <ErrorText>{getLocale('braveWalletAccountSettingsUpdateError')}</ErrorText>
             }
             <QRCodeWrapper src={qrCode} />
-            <Tooltip text={getLocale('braveWalletToolTipCopyToClipboard')}>
-              <AddressButton onClick={onCopyToClipboard}>{reduceAddress(account.address)}<CopyIcon /></AddressButton>
+            <Tooltip
+              text={getLocale('braveWalletToolTipCopyToClipboard')}
+              actionText={getLocale('braveWalletToolTipCopiedToClipboard')}
+              isActionVisible={accountAddressCopied}
+            >
+              <AddressButton onClick={onCopyAccountAddress}>{reduceAddress(account.address)}<CopyIcon /></AddressButton>
             </Tooltip>
             <ButtonRow>
               <NavButton
@@ -214,7 +224,11 @@ const AddAccountModal = (props: Props) => {
             </WarningWrapper>
             }
             {showPrivateKey &&
-              <Tooltip text={getLocale('braveWalletToolTipCopyToClipboard')}>
+              <Tooltip
+                text={getLocale('braveWalletToolTipCopyToClipboard')}
+                actionText={getLocale('braveWalletToolTipCopiedToClipboard')}
+                isActionVisible={privateKeyCopied}
+              >
                 <PrivateKeyBubble onClick={onCopyPrivateKey}>{privateKey}</PrivateKeyBubble>
               </Tooltip>
             }

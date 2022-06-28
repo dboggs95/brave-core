@@ -9,12 +9,11 @@ import { create, background } from 'ethereum-blockies'
 // Utils
 import { getLocale } from '../../../../common/locale'
 import { reduceAddress } from '../../../utils/reduce-address'
-import { copyToClipboard } from '../../../utils/copy-to-clipboard'
 import { reduceAccountDisplayName } from '../../../utils/reduce-account-name'
 import Amount from '../../../utils/amount'
 
 // Hooks
-import { useExplorer, usePricing } from '../../../common/hooks'
+import { useCopy, useExplorer, usePricing } from '../../../common/hooks'
 
 // types
 import {
@@ -83,6 +82,7 @@ export const ConnectedPanel = (props: Props) => {
   // custom hooks
   const { computeFiatAmount } = usePricing(spotPrices)
   const onClickViewOnBlockExplorer = useExplorer(selectedNetwork)
+  const { copied, copyText } = useCopy()
 
   // methods
   const navigate = React.useCallback((path: PanelTypes) => () => {
@@ -108,7 +108,7 @@ export const ConnectedPanel = (props: Props) => {
   }, [showMore])
 
   const onCopyToClipboard = React.useCallback(async () => {
-    await copyToClipboard(selectedAccount.address)
+    await copyText(selectedAccount.address)
   }, [selectedAccount.address])
 
   // memos
@@ -169,7 +169,11 @@ export const ConnectedPanel = (props: Props) => {
             <SwitchIcon />
           </AccountCircle>
           <AccountNameText>{reduceAccountDisplayName(selectedAccount.name, 14)}</AccountNameText>
-          <Tooltip text={getLocale('braveWalletToolTipCopyToClipboard')}>
+          <Tooltip
+            text={getLocale('braveWalletToolTipCopyToClipboard')}
+            actionText={getLocale('braveWalletToolTipCopiedToClipboard')}
+            isActionVisible={copied}
+          >
             <AccountAddressText onClick={onCopyToClipboard}>{reduceAddress(selectedAccount.address)}</AccountAddressText>
           </Tooltip>
         </BalanceColumn>

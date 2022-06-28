@@ -2,11 +2,10 @@ import * as React from 'react'
 import { create } from 'ethereum-blockies'
 
 // Hooks
-import { useExplorer, usePricing } from '../../../common/hooks'
+import { useExplorer, usePricing, useCopy } from '../../../common/hooks'
 
 // Utils
 import { reduceAddress } from '../../../utils/reduce-address'
-import { copyToClipboard } from '../../../utils/copy-to-clipboard'
 import Amount from '../../../utils/amount'
 
 import { Tooltip } from '../../shared'
@@ -56,9 +55,13 @@ const PortfolioAccountItem = (props: Props) => {
     spotPrices
   } = props
   const [showAccountPopup, setShowAccountPopup] = React.useState<boolean>(false)
-  const onCopyToClipboard = async () => {
-    await copyToClipboard(address)
-  }
+
+  // custom hooks
+  const { copied, copyText } = useCopy()
+
+  const onCopyToClipboard = React.useCallback(async () => {
+    await copyText(address)
+  }, [address, copyText])
 
   const orb = React.useMemo(() => {
     return create({ seed: address.toLowerCase(), size: 8, scale: 16 }).toDataURL()
@@ -89,7 +92,11 @@ const PortfolioAccountItem = (props: Props) => {
     <StyledWrapper onClick={onHideTransactionPopup}>
       <NameAndIcon>
         <AccountCircle orb={orb} />
-        <Tooltip text={getLocale('braveWalletToolTipCopyToClipboard')}>
+        <Tooltip
+          text={getLocale('braveWalletToolTipCopyToClipboard')}
+          actionText={getLocale('braveWalletToolTipCopiedToClipboard')}
+          isActionVisible={copied}
+        >
           <AccountAndAddress onClick={onCopyToClipboard}>
             <AccountName>{name}</AccountName>
             <AccountAddress>{reduceAddress(address)}</AccountAddress>

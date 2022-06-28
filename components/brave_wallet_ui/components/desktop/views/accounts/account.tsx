@@ -269,7 +269,6 @@ export const Account = (props: Props) => {
           account={selectedAccount}
           onClose={onCloseEditModal}
           onUpdateAccountName={onUpdateAccountName}
-          onCopyToClipboard={onCopyToClipboard}
           onChangeTab={setEditTab}
           onToggleNav={toggleNav}
           onRemoveAccount={onRemoveAccount}
