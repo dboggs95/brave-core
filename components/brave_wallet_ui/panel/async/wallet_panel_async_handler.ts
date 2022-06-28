@@ -173,6 +173,12 @@ async function navigateToConnectHardwareWallet (store: Store) {
   await store.dispatch(PanelActions.setHardwareWalletInteractionError(undefined))
 }
 
+export function isSolanaAccountConnected (): boolean {
+  // Add logic for window.solana.isConnected here.
+  // const status = window.solana.isConnected
+  return true
+}
+
 handler.on(WalletActions.initialize.getType(), async (store) => {
   const state = getPanelState(store)
   // Sanity check we only initialize once
@@ -294,8 +300,8 @@ handler.on(PanelActions.approveHardwareTransaction.getType(), async (store: Stor
   const apiProxy = getWalletPanelApiProxy()
   if (hardwareAccount.vendor === BraveWallet.LEDGER_HARDWARE_VENDOR) {
     const { success, error, code } = (found.coin === BraveWallet.CoinType.ETH)
-       ? await signLedgerEthereumTransaction(apiProxy, hardwareAccount.path, txInfo, found.coin)
-       : await signLedgerFilecoinTransaction(apiProxy, txInfo, found.coin)
+      ? await signLedgerEthereumTransaction(apiProxy, hardwareAccount.path, txInfo, found.coin)
+      : await signLedgerFilecoinTransaction(apiProxy, txInfo, found.coin)
     if (success) {
       refreshTransactionHistory(txInfo.fromAddress)
       await store.dispatch(PanelActions.setSelectedTransaction(txInfo))

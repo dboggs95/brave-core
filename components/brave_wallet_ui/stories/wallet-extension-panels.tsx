@@ -43,7 +43,6 @@ import {
   PanelTypes,
   AppsListType,
   BuySendSwapViewTypes,
-  Origin,
   WalletState,
   AccountTransactions
 } from '../constants/types'
@@ -693,20 +692,8 @@ export const _ConnectedPanel = (args: { locked: boolean }) => {
     setInputValue(value)
   }
 
-  const onOpenSettings = () => {
-    alert('Will go to Wallet Settings')
-  }
-
   const onRestore = () => {
     alert('Will navigate to full wallet restore page')
-  }
-
-  const onDisconnectFromOrigin = (origin: Origin, account: WalletAccountType, connectedAccounts: WalletAccountType[]) => {
-    console.log(`Will disconnect ${account.address} from ${origin.host}`)
-  }
-
-  const onConnectToOrigin = (origin: Origin, account: WalletAccountType) => {
-    console.log(`Will connect ${account.address} to ${origin.host}`)
   }
 
   const onAddAccount = () => {
@@ -736,8 +723,6 @@ export const _ConnectedPanel = (args: { locked: boolean }) => {
     alert('Will speedup transaction')
   }
 
-  const connectedAccounts = mockAccounts.slice(0, 2)
-
   const onSelectTransaction = (transaction: BraveWallet.TransactionInfo) => {
     navigateTo('transactionDetails')
     setSelectedTransaction(transaction)
@@ -759,14 +744,7 @@ export const _ConnectedPanel = (args: { locked: boolean }) => {
           <>
             {selectedPanel === 'main' ? (
               <ConnectedPanel
-                spotPrices={[]}
-                defaultCurrencies={mockDefaultCurrencies}
-                selectedNetwork={selectedNetwork}
-                selectedAccount={selectedAccount}
-                isConnected={true}
                 navAction={navigateTo}
-                onOpenSettings={onOpenSettings}
-                originInfo={originInfo}
                 isSwapSupported={true}
               />
             ) : (
@@ -846,16 +824,7 @@ export const _ConnectedPanel = (args: { locked: boolean }) => {
                         />
                       }
                       {selectedPanel === 'sitePermissions' &&
-                        <SitePermissions
-                          selectedAccount={selectedAccount}
-                          originInfo={originInfo}
-                          onDisconnect={onDisconnectFromOrigin}
-                          connectedAccounts={connectedAccounts}
-                          accounts={mockAccounts}
-                          onSwitchAccount={onSelectAccount}
-                          onConnect={onConnectToOrigin}
-                          onAddAccount={onAddAccount}
-                        />
+                        <SitePermissions />
                       }
                       {selectedPanel === 'transactions' &&
                         <TransactionsPanel
