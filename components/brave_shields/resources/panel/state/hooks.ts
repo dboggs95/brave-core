@@ -43,3 +43,21 @@ export function useSiteSettingsData () {
 
   return { siteSettings, getSiteSettings }
 }
+
+export function useIsExpanded () {
+  const [isExpanded, setIsExpanded] = React.useState<boolean | null>(null)
+
+  const toggleIsExpanded = () => {
+    setIsExpanded(prevState => {
+      const newState = !prevState
+      getPanelBrowserAPI().panelHandler.setAdvancedViewEnabled(newState)
+      return newState
+    })
+  }
+
+  React.useEffect(() => {
+    getPanelBrowserAPI().panelHandler.getAdvancedViewEnabled().then(res => setIsExpanded(res.isEnabled))
+  }, [])
+
+  return { isExpanded, toggleIsExpanded }
+}

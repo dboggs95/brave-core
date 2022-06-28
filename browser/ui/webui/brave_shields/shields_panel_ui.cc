@@ -71,7 +71,7 @@ void ShieldsPanelUI::CreatePanelHandler(
 
   panel_handler_ = std::make_unique<ShieldsPanelHandler>(
       std::move(panel_receiver), this,
-      static_cast<BraveBrowserWindow*>(browser_->window()));
+      static_cast<BraveBrowserWindow*>(browser_->window()), profile);
   data_handler_ = std::make_unique<ShieldsPanelDataHandler>(
       std::move(data_handler_receiver), this, browser_->tab_strip_model());
 }
