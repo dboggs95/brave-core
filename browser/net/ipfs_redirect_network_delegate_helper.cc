@@ -19,10 +19,22 @@ namespace ipfs {
 int OnBeforeURLRequest_IPFSRedirectWork(
     const brave::ResponseCallback& next_callback,
     std::shared_ptr<brave::BraveRequestInfo> ctx) {
-  if (!ctx->browser_context || !brave::IsRegularProfile(ctx->browser_context))
+  bool hasIpfsScheme = IsIPFSScheme(ctx->request_url);
+  if (!ctx->browser_context) {
+    if (hasIpfsScheme) {
+      ctx->blocked_by = brave::kOtherBlocked;
+    }
     return net::OK;
+  }
+
   auto* prefs = user_prefs::UserPrefs::Get(ctx->browser_context);
-  if (IsIpfsResolveMethodDisabled(prefs)) {
+  bool ipfsDisabled = IsIpfsResolveMethodDisabled(prefs);
+
+  if (ipfsDisabled || !brave::IsRegularProfile(ctx->browser_context)) {
+    if (hasIpfsScheme &&
+        ctx->resource_type != blink::mojom::ResourceType::kMainFrame) {
+      ctx->blocked_by = brave::kOtherBlocked;
+    }
     return net::OK;
   }
 
