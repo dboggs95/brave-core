@@ -17,6 +17,7 @@
 #include "base/environment.h"
 #include "base/feature_list.h"
 #include "base/logging.h"
+#include "base/metrics/field_trial_params.h"
 #include "base/notreached.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
@@ -87,7 +88,7 @@ const brave_wallet::mojom::NetworkInfo kKnownEthNetworks[] = {
      {},
      {},
      "ETH",
-     "Ether",
+     "Ethereum",
      18,
      brave_wallet::mojom::CoinType::ETH,
      mojom::NetworkInfoData::NewEthData(mojom::NetworkInfoDataETH::New(true))},
@@ -256,6 +257,18 @@ const brave_wallet::mojom::NetworkInfo kKnownFilNetworks[] = {
      "Filecoin",
      18,
      brave_wallet::mojom::CoinType::FIL,
+     nullptr}};
+
+const brave_wallet::mojom::NetworkInfo kKnownFilNetworksWithTestnet[] = {
+    {brave_wallet::mojom::kFilecoinMainnet,
+     "Filecoin Mainnet",
+     {"https://filscan.io/tipset/message-detail"},
+     {},
+     {"https://api.node.glif.io/rpc/v0"},
+     "FIL",
+     "Filecoin",
+     18,
+     brave_wallet::mojom::CoinType::FIL,
      nullptr},
     {brave_wallet::mojom::kFilecoinTestnet,
      "Filecoin Testnet",
@@ -277,6 +290,27 @@ const brave_wallet::mojom::NetworkInfo kKnownFilNetworks[] = {
      18,
      brave_wallet::mojom::CoinType::FIL,
      nullptr}};
+
+const std::vector<brave_wallet::mojom::NetworkInfoPtr>&
+GetActualFilNetworksInfo() {
+  static const base::NoDestructor<
+      std::vector<brave_wallet::mojom::NetworkInfoPtr>>
+      networks_info([] {
+        std::vector<brave_wallet::mojom::NetworkInfoPtr> networks_info;
+        if (IsFilecoinTestnetEnabled()) {
+          for (const auto& a : kKnownFilNetworksWithTestnet) {
+            networks_info.push_back(a.Clone());
+          }
+        } else {
+          for (const auto& a : kKnownFilNetworks) {
+            networks_info.push_back(a.Clone());
+          }
+        }
+        return networks_info;
+      }());
+
+  return *networks_info;
+}
 
 const base::flat_map<std::string, std::string> kInfuraSubdomains = {
     {brave_wallet::mojom::kMainnetChainId, "mainnet"},
@@ -334,24 +368,29 @@ const base::Value::List* GetEthCustomNetworksList(PrefService* prefs) {
 }
 
 std::vector<mojom::NetworkInfoPtr> MergeEthChains(
-    std::vector<mojom::NetworkInfoPtr> custom_chains,
-    std::vector<mojom::NetworkInfoPtr> known_chains) {
-  std::unordered_set<std::string> ids;
-  for (const auto& chain : custom_chains) {
-    ids.insert(chain->chain_id);
-  }
-
+    std::vector<mojom::NetworkInfoPtr> known_chains,
+    std::vector<mojom::NetworkInfoPtr> custom_chains) {
   std::vector<mojom::NetworkInfoPtr> result;
-  // Put all known chains to result, but skip any custom chain_ids.
-  for (auto& chain : known_chains) {
-    if (ids.count(chain->chain_id))
-      continue;
-    result.push_back(std::move(chain));
+  // Put all known chains to result, replace with custom one if chain_id
+  // matches.
+  for (auto& known_chain : known_chains) {
+    bool add_known_chain = true;
+    for (auto& custom_chain : custom_chains) {
+      if (custom_chain && custom_chain->chain_id == known_chain->chain_id) {
+        result.push_back(std::move(custom_chain));
+        add_known_chain = false;
+        break;
+      }
+    }
+    if (add_known_chain) {
+      result.push_back(std::move(known_chain));
+    }
   }
 
-  // Put all custom chains to result.
-  for (auto& chain : custom_chains) {
-    result.push_back(std::move(chain));
+  // Put all remaining custom chains to result.
+  for (auto& custom_chain : custom_chains) {
+    if (custom_chain)
+      result.push_back(std::move(custom_chain));
   }
 
   return result;
@@ -384,11 +423,14 @@ mojom::NetworkInfoPtr GetKnownEthChain(PrefService* prefs,
       continue;
 
     auto result = network.Clone();
-    if (chain_id == brave_wallet::mojom::kLocalhostChainId)
-      result->data->set_eth_data(mojom::NetworkInfoDataETH::New(
-          prefs->GetBoolean(kSupportEip1559OnLocalhostChain)));
     if (result->rpc_urls.empty())
       result->rpc_urls.push_back(GetInfuraURLForKnownChainId(chain_id));
+
+    if (prefs && chain_id == brave_wallet::mojom::kLocalhostChainId) {
+      result->data->set_eth_data(mojom::NetworkInfoDataETH::New(
+          prefs->GetBoolean(kSupportEip1559OnLocalhostChain)));
+    }
+
     return result;
   }
   return nullptr;
@@ -426,8 +468,8 @@ mojom::NetworkInfoPtr GetChain(PrefService* prefs,
       }
     }
   } else if (coin == mojom::CoinType::FIL) {
-    for (const auto& network : kKnownFilNetworks) {
-      if (network.chain_id == chain_id) {
+    for (const auto& network : GetActualFilNetworksInfo()) {
+      if (network->chain_id == chain_id) {
         return network.Clone();
       }
     }
@@ -518,6 +560,13 @@ bool IsNativeWalletEnabled() {
 bool IsFilecoinEnabled() {
   return base::FeatureList::IsEnabled(
       brave_wallet::features::kBraveWalletFilecoinFeature);
+}
+
+// This is needed only for unit tests, not to be used in prod.
+bool IsFilecoinTestnetEnabled() {
+  return base::FeatureList::IsEnabled(
+             brave_wallet::features::kBraveWalletFilecoinFeature) &&
+         brave_wallet::features::kFilecoinTestnetEnabled.Get();
 }
 
 bool IsDappsSupportEnabled() {
@@ -883,9 +932,9 @@ GURL GetNetworkURL(PrefService* prefs,
       }
     }
   } else if (coin == mojom::CoinType::FIL) {
-    for (const auto& network : kKnownFilNetworks) {
-      if (network.chain_id == chain_id && network.rpc_urls.size()) {
-        return GURL(network.rpc_urls.front());
+    for (const auto& network : GetActualFilNetworksInfo()) {
+      if (network->chain_id == chain_id && network->rpc_urls.size()) {
+        return GURL(network->rpc_urls.front());
       }
     }
   }
@@ -895,8 +944,8 @@ GURL GetNetworkURL(PrefService* prefs,
 std::vector<mojom::NetworkInfoPtr> GetAllChains(PrefService* prefs,
                                                 mojom::CoinType coin) {
   if (coin == mojom::CoinType::ETH) {
-    return MergeEthChains(GetAllEthCustomChains(prefs),
-                          GetAllKnownEthChains(prefs));
+    return MergeEthChains(GetAllKnownEthChains(prefs),
+                          GetAllEthCustomChains(prefs));
   } else if (coin == mojom::CoinType::SOL) {
     return GetAllKnownSolChains();
   } else if (coin == mojom::CoinType::FIL) {
@@ -908,7 +957,7 @@ std::vector<mojom::NetworkInfoPtr> GetAllChains(PrefService* prefs,
 
 std::vector<mojom::NetworkInfoPtr> GetAllKnownFilChains() {
   std::vector<mojom::NetworkInfoPtr> result;
-  for (const auto& network : kKnownFilNetworks)
+  for (const auto& network : GetActualFilNetworksInfo())
     result.push_back(network.Clone());
   return result;
 }
@@ -932,8 +981,8 @@ std::vector<std::string> GetAllKnownSolNetworkIds() {
 
 std::vector<std::string> GetAllKnownFilNetworkIds() {
   std::vector<std::string> network_ids;
-  for (const auto& network : kKnownFilNetworks) {
-    std::string network_id = GetKnownFilNetworkId(network.chain_id);
+  for (const auto& network : GetActualFilNetworksInfo()) {
+    std::string network_id = GetKnownFilNetworkId(network->chain_id);
     if (!network_id.empty())
       network_ids.push_back(network_id);
   }
@@ -955,14 +1004,15 @@ std::string GetKnownEthNetworkId(const std::string& chain_id) {
   if (!subdomain.empty())
     return subdomain;
 
-  // Separate check for localhost in known networks as it is predefined but
-  // does not have infura subdomain.
-  if (chain_id == mojom::kLocalhostChainId) {
-    for (const auto& network : kKnownEthNetworks) {
-      if (network.chain_id == chain_id) {
-        return GURL(network.rpc_urls.front()).spec();
-      }
-    }
+  // For known networks not in kInfuraSubdomains:
+  //   localhost: Use the first RPC URL.
+  //   other: Use chain ID like other custom networks.
+  for (const auto& network : kKnownEthNetworks) {
+    if (network.chain_id != chain_id)
+      continue;
+    if (chain_id == mojom::kLocalhostChainId)
+      return GURL(network.rpc_urls.front()).spec();
+    return chain_id;
   }
 
   return "";
@@ -994,9 +1044,9 @@ std::string GetKnownFilNetworkId(const std::string& chain_id) {
   // Separate check for localhost in known networks as it is predefined but
   // does not have predefined subdomain.
   if (chain_id == mojom::kLocalhostChainId) {
-    for (const auto& network : kKnownFilNetworks) {
-      if (network.chain_id == chain_id) {
-        return GURL(network.rpc_urls.front()).spec();
+    for (const auto& network : GetActualFilNetworksInfo()) {
+      if (network->chain_id == chain_id) {
+        return GURL(network->rpc_urls.front()).spec();
       }
     }
   }
@@ -1018,8 +1068,6 @@ std::string GetKnownNetworkId(mojom::CoinType coin,
 std::string GetNetworkId(PrefService* prefs,
                          mojom::CoinType coin,
                          const std::string& chain_id) {
-  DCHECK(prefs);
-
   if (chain_id.empty())
     return "";
 
@@ -1027,6 +1075,7 @@ std::string GetNetworkId(PrefService* prefs,
   if (!id.empty())
     return id;
 
+  DCHECK(prefs);
   if (coin == mojom::CoinType::ETH) {
     for (const auto& network : GetAllEthCustomChains(prefs)) {
       if (network->chain_id != chain_id)
@@ -1162,11 +1211,74 @@ void RemoveCustomNetwork(PrefService* prefs,
   });
 }
 
-std::string GetCurrentFilecoinNetworkPrefix(PrefService* prefs) {
-  return (GetCurrentChainId(prefs, mojom::CoinType::FIL) ==
-          brave_wallet::mojom::kFilecoinMainnet)
-             ? mojom::kFilecoinMainnet
-             : mojom::kFilecoinTestnet;
+std::vector<std::string> GetAllHiddenNetworks(PrefService* prefs,
+                                              mojom::CoinType coin) {
+  if (coin != mojom::CoinType::ETH) {
+    NOTREACHED();
+    return {};
+  }
+
+  std::vector<std::string> result;
+  const base::Value* hidden_networks =
+      prefs->GetDictionary(kBraveWalletHiddenNetworks);
+  if (!hidden_networks)
+    return result;
+
+  auto* hidden_eth_networks =
+      hidden_networks->GetDict().FindList(kEthereumPrefKey);
+  if (!hidden_eth_networks)
+    return result;
+
+  for (const auto& it : *hidden_eth_networks) {
+    auto* chain_id = it.GetIfString();
+    if (chain_id)
+      result.push_back(std::move(*chain_id));
+  }
+
+  return result;
+}
+
+void AddHiddenNetwork(PrefService* prefs,
+                      mojom::CoinType coin,
+                      const std::string& chain_id) {
+  if (coin != mojom::CoinType::ETH) {
+    NOTREACHED();
+    return;
+  }
+
+  DictionaryPrefUpdate update(prefs, kBraveWalletHiddenNetworks);
+  base::Value* dict = update.Get();
+  CHECK(dict);
+  base::Value* list = dict->FindKey(kEthereumPrefKey);
+  if (!list) {
+    list = dict->SetKey(kEthereumPrefKey, base::Value(base::Value::Type::LIST));
+  }
+  CHECK(list);
+  if (!base::Contains(list->GetList(), base::Value(chain_id))) {
+    list->Append(base::Value(chain_id));
+  }
+}
+
+void RemoveHiddenNetwork(PrefService* prefs,
+                         mojom::CoinType coin,
+                         const std::string& chain_id) {
+  if (coin != mojom::CoinType::ETH) {
+    NOTREACHED();
+    return;
+  }
+
+  DictionaryPrefUpdate update(prefs, kBraveWalletHiddenNetworks);
+  base::Value* dict = update.Get();
+  CHECK(dict);
+  base::Value* list = dict->FindKey(kEthereumPrefKey);
+  if (!list)
+    return;
+  list->EraseListValueIf([&](const base::Value& v) {
+    auto* chain_id_string = v.GetIfString();
+    if (!chain_id_string)
+      return false;
+    return *chain_id_string == chain_id;
+  });
 }
 
 std::string GetCurrentChainId(PrefService* prefs, mojom::CoinType coin) {
@@ -1209,18 +1321,6 @@ mojom::OriginInfoPtr MakeOriginInfo(const url::Origin& origin) {
 std::string GetWeb3ClientVersion() {
   return base::StringPrintf(
       "BraveWallet/v%s", version_info::GetBraveChromiumVersionNumber().c_str());
-}
-
-absl::optional<ContentSettingsType> CoinTypeToContentSettingsType(
-    mojom::CoinType coin_type) {
-  switch (coin_type) {
-    case mojom::CoinType::ETH:
-      return ContentSettingsType::BRAVE_ETHEREUM;
-    case mojom::CoinType::SOL:
-      return ContentSettingsType::BRAVE_SOLANA;
-    default:
-      return absl::nullopt;
-  }
 }
 
 }  // namespace brave_wallet

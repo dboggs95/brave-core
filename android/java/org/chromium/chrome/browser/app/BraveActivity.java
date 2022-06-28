@@ -61,6 +61,8 @@ import org.chromium.base.annotations.JNINamespace;
 import org.chromium.base.annotations.NativeMethods;
 import org.chromium.base.supplier.ObservableSupplier;
 import org.chromium.base.supplier.UnownedUserDataSupplier;
+import org.chromium.base.task.PostTask;
+import org.chromium.base.task.TaskTraits;
 import org.chromium.brave_wallet.mojom.AssetRatioService;
 import org.chromium.brave_wallet.mojom.BlockchainRegistry;
 import org.chromium.brave_wallet.mojom.BraveWalletService;
@@ -147,6 +149,7 @@ import org.chromium.chrome.browser.util.BraveConstants;
 import org.chromium.chrome.browser.util.BraveDbUtil;
 import org.chromium.chrome.browser.util.ConfigurationUtils;
 import org.chromium.chrome.browser.util.PackageUtils;
+import org.chromium.chrome.browser.util.TabUtils;
 import org.chromium.chrome.browser.vpn.BraveVpnNativeWorker;
 import org.chromium.chrome.browser.vpn.BraveVpnObserver;
 import org.chromium.chrome.browser.vpn.activities.BraveVpnProfileActivity;
@@ -185,6 +188,7 @@ public abstract class BraveActivity<C extends ChromeActivityComponent> extends C
                    OnBraveSetDefaultBrowserListener, ConnectionErrorHandler {
     public static final String ADD_FUNDS_URL = "brave://rewards/#add-funds";
     public static final String BRAVE_REWARDS_SETTINGS_URL = "brave://rewards/";
+    private static final String BRAVE_TALK_URL = "https://talk.brave.com/";
     public static final String BRAVE_REWARDS_SETTINGS_WALLET_VERIFICATION_URL =
             "brave://rewards/#verify";
     public static final String REWARDS_AC_SETTINGS_URL = "brave://rewards/contribute";
@@ -234,6 +238,7 @@ public abstract class BraveActivity<C extends ChromeActivityComponent> extends C
     public CopyOnWriteArrayList<FeedItemsCard> mNewsItemsFeedCards;
     private boolean isProcessingPendingDappsTxRequest;
     private int mLastTabId;
+    private boolean mNativeInitialized;
 
     @SuppressLint("VisibleForTests")
     public BraveActivity() {
@@ -249,12 +254,35 @@ public abstract class BraveActivity<C extends ChromeActivityComponent> extends C
             InAppPurchaseWrapper.getInstance().startBillingServiceConnection(BraveActivity.this);
             BraveVpnNativeWorker.getInstance().addObserver(this);
         }
+        Tab tab = getActivityTab();
+        if (tab != null) {
+            // Set proper active DSE whenever brave returns to foreground.
+            // If active tab is private, set private DSE as an active DSE.
+            BraveSearchEngineUtils.updateActiveDSE(tab.isIncognito());
+        }
+
+        // The check on mNativeInitialized is mostly to ensure that mojo
+        // services for wallet are initialized.
+        // TODO(sergz): verify do we need it in that phase or not.
+        if (mNativeInitialized) {
+            BraveToolbarLayoutImpl layout = getBraveToolbarLayout();
+            if (layout == null || !layout.isWalletIconVisible()) {
+                return;
+            }
+            updateWalletBadgeVisibility();
+        }
     }
 
     @Override
     public void onPauseWithNative() {
         if (BraveVpnUtils.isBraveVpnFeatureEnable()) {
             BraveVpnNativeWorker.getInstance().removeObserver(this);
+        }
+        Tab tab = getActivityTab();
+        if (tab != null && tab.isIncognito()) {
+            // Set normal DSE as an active DSE when brave goes in background
+            // because currently set DSE is used by outside of brave(ex, brave search widget).
+            BraveSearchEngineUtils.updateActiveDSE(false);
         }
         super.onPauseWithNative();
     }
@@ -284,6 +312,8 @@ public abstract class BraveActivity<C extends ChromeActivityComponent> extends C
             ApplicationLifetime.terminate(false);
         } else if (id == R.id.set_default_browser) {
             BraveSetDefaultBrowserUtils.showBraveSetDefaultBrowserDialog(BraveActivity.this, true);
+        } else if (id == R.id.brave_talk_id) {
+            TabUtils.openUrlInNewTab(false, BRAVE_TALK_URL);
         } else if (id == R.id.brave_rewards_id) {
             openNewOrSelectExistingTab(BRAVE_REWARDS_SETTINGS_URL);
         } else if (id == R.id.brave_wallet_id) {
@@ -346,6 +376,14 @@ public abstract class BraveActivity<C extends ChromeActivityComponent> extends C
             maybeShowPendingTransactions();
             maybeShowSignMessageRequestLayout();
         });
+    }
+
+
+    private void setWalletBadgeVisibility(boolean visibile) {
+        BraveToolbarLayoutImpl layout = getBraveToolbarLayout();
+        if (layout != null) {
+            layout.updateWalletBadgeVisibility(visibile);
+        }
     }
 
     private void maybeShowPendingTransactions() {
@@ -439,10 +477,14 @@ public abstract class BraveActivity<C extends ChromeActivityComponent> extends C
         }
     }
 
-    public void showWalletPanel() {
+    public void showWalletPanel(boolean ignoreWeb3NotificationPreference) {
         BraveToolbarLayoutImpl layout = getBraveToolbarLayout();
         if (layout != null) {
             layout.showWalletIcon(true);
+        }
+        if (!ignoreWeb3NotificationPreference
+                && !BraveWalletPreferences.getPrefWeb3NotificationsEnabled()) {
+            return;
         }
         assert mKeyringService != null;
         mKeyringService.isLocked(locked -> {
@@ -458,6 +500,9 @@ public abstract class BraveActivity<C extends ChromeActivityComponent> extends C
         BraveToolbarLayoutImpl layout = getBraveToolbarLayout();
         if (layout != null) {
             layout.showWalletIcon(true);
+            if (!BraveWalletPreferences.getPrefWeb3NotificationsEnabled()) {
+                return;
+            }
             layout.showWalletPanel();
         }
     }
@@ -472,7 +517,13 @@ public abstract class BraveActivity<C extends ChromeActivityComponent> extends C
         BraveToolbarLayoutImpl layout = getBraveToolbarLayout();
         if (layout != null) {
             layout.showWalletIcon(true);
+            updateWalletBadgeVisibility();
         }
+    }
+
+    private void updateWalletBadgeVisibility() {
+        assert walletModel != null;
+        walletModel.getDappsModel().updateWalletBadgeVisibility();
     }
 
     private void verifySubscription() {
@@ -495,11 +546,13 @@ public abstract class BraveActivity<C extends ChromeActivityComponent> extends C
     public void onVerifyPurchaseToken(String jsonResponse, boolean isSuccess) {
         if (isSuccess) {
             Long purchaseExpiry = BraveVpnUtils.getPurchaseExpiryDate(jsonResponse);
+            int paymentState = BraveVpnUtils.getPaymentState(jsonResponse);
             if (purchaseExpiry > 0 && purchaseExpiry >= System.currentTimeMillis()) {
                 BraveVpnPrefUtils.setPurchaseToken(mPurchaseToken);
                 BraveVpnPrefUtils.setProductId(mProductId);
                 BraveVpnPrefUtils.setPurchaseExpiry(purchaseExpiry);
                 BraveVpnPrefUtils.setSubscriptionPurchase(true);
+                BraveVpnPrefUtils.setPaymentState(paymentState);
                 if (BraveVpnPrefUtils.isResetConfiguration()) {
                     BraveVpnUtils.dismissProgressDialog();
                     BraveVpnUtils.openBraveVpnProfileActivity(BraveActivity.this);
@@ -647,28 +700,9 @@ public abstract class BraveActivity<C extends ChromeActivityComponent> extends C
                 BraveSetDefaultBrowserUtils.setBraveDefaultSuccess();
             }
         }
-        Tab tab = getActivityTab();
-        if (tab == null)
-            return;
 
-        // Set proper active DSE whenever brave returns to foreground.
-        // If active tab is private, set private DSE as an active DSE.
-        BraveSearchEngineUtils.updateActiveDSE(tab.isIncognito());
-        BraveStatsUtil.removeShareStatsFile();
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        Tab tab = getActivityTab();
-        if (tab == null)
-            return;
-
-        // Set normal DSE as an active DSE when brave goes in background
-        // because currently set DSE is used by outside of brave(ex, brave search widget).
-        if (tab.isIncognito()) {
-            BraveSearchEngineUtils.updateActiveDSE(false);
-        }
+        PostTask.postTask(
+                TaskTraits.BEST_EFFORT_MAY_BLOCK, () -> { BraveStatsUtil.removeShareStatsFile(); });
     }
 
     @Override
@@ -870,6 +904,7 @@ public abstract class BraveActivity<C extends ChromeActivityComponent> extends C
         if (OnboardingPrefManager.getInstance().isOnboardingSearchBoxTooltip()) {
             showSearchBoxTooltip();
         }
+        mNativeInitialized = true;
     }
 
     private void showSearchBoxTooltip() {
@@ -1317,6 +1352,9 @@ public abstract class BraveActivity<C extends ChromeActivityComponent> extends C
                                 BraveWalletDAppsActivity.ActivityType.CONFIRM_TRANSACTION);
                     }
                 });
+        walletModel.getDappsModel().mWalletIconNotificationVisible.removeObservers(this);
+        walletModel.getDappsModel().mWalletIconNotificationVisible.observe(
+                this, visible -> { setWalletBadgeVisibility(visible); });
     }
 
     private void showBraveRateDialog() {
@@ -1476,7 +1514,7 @@ public abstract class BraveActivity<C extends ChromeActivityComponent> extends C
     }
 
     public int getToolbarShadowHeight() {
-        View toolbarShadow = findViewById(R.id.toolbar_shadow);
+        View toolbarShadow = findViewById(R.id.toolbar_hairline);
         assert toolbarShadow != null;
         if (toolbarShadow != null) {
             return toolbarShadow.getHeight();
@@ -1484,13 +1522,28 @@ public abstract class BraveActivity<C extends ChromeActivityComponent> extends C
         return 0;
     }
 
-    public int getToolbarBottom() {
-        View toolbarShadow = findViewById(R.id.toolbar_shadow);
+    public float getToolbarBottom() {
+        View toolbarShadow = findViewById(R.id.toolbar_hairline);
         assert toolbarShadow != null;
         if (toolbarShadow != null) {
-            return toolbarShadow.getBottom();
+            return toolbarShadow.getY();
         }
         return 0;
+    }
+
+    public boolean isViewBelowToolbar(View view) {
+        View toolbarShadow = findViewById(R.id.toolbar_hairline);
+        assert toolbarShadow != null;
+        assert view != null;
+        if (toolbarShadow != null && view != null) {
+            int[] coordinatesToolbar = new int[2];
+            toolbarShadow.getLocationInWindow(coordinatesToolbar);
+            int[] coordinatesView = new int[2];
+            view.getLocationInWindow(coordinatesView);
+            return coordinatesView[1] >= coordinatesToolbar[1];
+        }
+
+        return false;
     }
 
     @NativeMethods

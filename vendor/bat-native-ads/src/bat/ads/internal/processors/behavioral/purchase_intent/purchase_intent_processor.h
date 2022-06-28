@@ -8,11 +8,15 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "base/memory/raw_ptr.h"
-#include "bat/ads/internal/processors/processor_interface.h"
+#include "bat/ads/internal/locale/locale_manager_observer.h"
+#include "bat/ads/internal/resources/resource_manager_observer.h"
 #include "bat/ads/internal/segments/segments_aliases.h"
-#include "url/gurl.h"
+#include "bat/ads/internal/tabs/tab_manager_observer.h"
+
+class GURL;
 
 namespace ads {
 
@@ -27,14 +31,16 @@ struct PurchaseIntentSiteInfo;
 
 namespace processor {
 
-class PurchaseIntent final : public ProcessorInterface<GURL> {
+class PurchaseIntent final : public LocaleManagerObserver,
+                             public ResourceManagerObserver,
+                             public TabManagerObserver {
  public:
   explicit PurchaseIntent(resource::PurchaseIntent* resource);
   ~PurchaseIntent() override;
   PurchaseIntent(const PurchaseIntent&) = delete;
   PurchaseIntent& operator=(const PurchaseIntent&) = delete;
 
-  void Process(const GURL& url) override;
+  void Process(const GURL& url);
 
  private:
   targeting::PurchaseIntentSignalInfo ExtractSignal(const GURL& url) const;
@@ -44,6 +50,17 @@ class PurchaseIntent final : public ProcessorInterface<GURL> {
   SegmentList GetSegmentsForSearchQuery(const std::string& search_query) const;
 
   uint16_t GetFunnelWeightForSearchQuery(const std::string& search_query) const;
+
+  // LocaleManagerObserver:
+  void OnLocaleDidChange(const std::string& locale) override;
+
+  // ResourceManagerObserver:
+  void OnResourceDidUpdate(const std::string& id) override;
+
+  // TabManagerObserver:
+  void OnTextContentDidChange(const int32_t id,
+                              const std::vector<GURL>& redirect_chain,
+                              const std::string& content) override;
 
   raw_ptr<resource::PurchaseIntent> resource_ = nullptr;  // NOT OWNED
 };

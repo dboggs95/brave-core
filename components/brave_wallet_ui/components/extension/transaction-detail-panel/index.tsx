@@ -1,3 +1,8 @@
+// Copyright (c) 2022 The Brave Authors. All rights reserved.
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this file,
+// you can obtain one at http://mozilla.org/MPL/2.0/.
+
 import * as React from 'react'
 import { useSelector } from 'react-redux'
 import * as EthereumBlockies from 'ethereum-blockies'
@@ -11,7 +16,7 @@ import { getTransactionStatusString } from '../../../utils/tx-utils'
 import { toProperCase } from '../../../utils/string-utils'
 import { mojoTimeDeltaToJSDate } from '../../../../common/mojomUtils'
 import Amount from '../../../utils/amount'
-import { getNetworkFromTXDataUnion } from '../../../utils/network-utils'
+import { getNetworkFromTXDataUnion, getCoinFromTxDataUnion } from '../../../utils/network-utils'
 
 import { getLocale } from '../../../../common/locale'
 import {
@@ -166,7 +171,11 @@ const TransactionDetailPanel = (props: Props) => {
   const isSolanaTransaction =
     liveTransaction.txType === BraveWallet.TransactionType.SolanaSystemTransfer ||
     liveTransaction.txType === BraveWallet.TransactionType.SolanaSPLTokenTransfer ||
-    liveTransaction.txType === BraveWallet.TransactionType.SolanaSPLTokenTransferWithAssociatedTokenAccountCreation
+    liveTransaction.txType === BraveWallet.TransactionType.SolanaSPLTokenTransferWithAssociatedTokenAccountCreation ||
+    liveTransaction.txType === BraveWallet.TransactionType.SolanaDappSignAndSendTransaction ||
+    liveTransaction.txType === BraveWallet.TransactionType.SolanaDappSignTransaction
+
+  const isFilecoinTransaction = getCoinFromTxDataUnion(liveTransaction.txDataUnion) === BraveWallet.CoinType.FIL
 
   return (
     <StyledWrapper>
@@ -269,6 +278,7 @@ const TransactionDetailPanel = (props: Props) => {
 
       {[BraveWallet.TransactionStatus.Approved, BraveWallet.TransactionStatus.Submitted].includes(transactionDetails.status) &&
         !isSolanaTransaction &&
+        !isFilecoinTransaction &&
         <DetailRow>
           <DetailTitle />
           <StatusRow>
@@ -280,6 +290,7 @@ const TransactionDetailPanel = (props: Props) => {
       }
       {transactionDetails.status === BraveWallet.TransactionStatus.Error &&
         !isSolanaTransaction &&
+        !isFilecoinTransaction &&
         <DetailRow>
           <DetailTitle />
           <StatusRow>

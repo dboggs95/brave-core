@@ -9,7 +9,7 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/singleton.h"
 #include "base/scoped_observation.h"
-#include "brave/components/weekly_storage/weekly_event_storage.h"
+#include "brave/components/time_period_storage/weekly_event_storage.h"
 #include "components/keyed_service/content/browser_context_keyed_service_factory.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "components/prefs/pref_member.h"
@@ -77,7 +77,8 @@ class SearchEngineTracker : public KeyedService,
                             public TemplateURLServiceObserver {
  public:
   SearchEngineTracker(TemplateURLService* template_url_service,
-                      PrefService* user_prefs);
+                      PrefService* profile_prefs,
+                      PrefService* local_state);
   ~SearchEngineTracker() override;
 
   SearchEngineTracker(const SearchEngineTracker&) = delete;
@@ -96,6 +97,8 @@ class SearchEngineTracker : public KeyedService,
   GURL default_search_url_;
   GURL previous_search_url_;
   WeeklyEventStorage switch_record_;
+
+  raw_ptr<PrefService> local_state_;
 
   raw_ptr<TemplateURLService> template_url_service_ = nullptr;
 };

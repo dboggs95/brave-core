@@ -18,7 +18,6 @@
 #include "base/mac/foundation_util.h"
 #include "base/path_service.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/task/post_task.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/task/thread_pool.h"
 #include "base/values.h"
@@ -73,13 +72,18 @@ void BraveBookmarksExportObserver::OnExportFinished(Result result) {
 - (void)setNativeParent:(bookmarks::BookmarkNode*)parent;
 @end
 
-@interface BraveBookmarksExporter ()
+@interface BraveBookmarksExporter () {
+  scoped_refptr<base::SequencedTaskRunner> export_thread_;
+}
 @end
 
 @implementation BraveBookmarksExporter
 
 - (instancetype)init {
   if ((self = [super init])) {
+    export_thread_ = base::ThreadPool::CreateSequencedTaskRunner(
+        {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
+         base::TaskShutdownBehavior::BLOCK_SHUTDOWN});
   }
   return self;
 }
@@ -118,8 +122,8 @@ void BraveBookmarksExportObserver::OnExportFinished(Result result) {
       };
 
   __weak BraveBookmarksExporter* weakSelf = self;
-  base::PostTask(FROM_HERE, {web::WebThread::UI},
-                 base::BindOnce(start_export, weakSelf, filePath, listener));
+  export_thread_->PostTask(
+      FROM_HERE, base::BindOnce(start_export, weakSelf, filePath, listener));
 }
 
 - (void)exportToFile:(NSString*)filePath
@@ -167,10 +171,8 @@ void BraveBookmarksExportObserver::OnExportFinished(Result result) {
       };
 
   __weak BraveBookmarksExporter* weakSelf = self;
-  base::ThreadPool::PostTask(
+  export_thread_->PostTask(
       FROM_HERE,
-      {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
-       base::TaskShutdownBehavior::BLOCK_SHUTDOWN},
       base::BindOnce(start_export, weakSelf, filePath, bookmarks, listener));
 }
 

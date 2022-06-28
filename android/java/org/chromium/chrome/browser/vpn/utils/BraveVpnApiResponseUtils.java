@@ -24,10 +24,10 @@ import java.util.TimeZone;
 
 public class BraveVpnApiResponseUtils {
     public static void queryPurchaseFailed(Activity activity) {
-        BraveVpnPrefUtils.setPurchaseToken("");
         BraveVpnPrefUtils.setProductId("");
         BraveVpnPrefUtils.setPurchaseExpiry(0L);
         BraveVpnPrefUtils.setSubscriptionPurchase(false);
+        BraveVpnPrefUtils.setPaymentState(0);
         if (BraveVpnProfileUtils.getInstance().isBraveVPNConnected(activity)) {
             BraveVpnProfileUtils.getInstance().stopVpn(activity);
         }

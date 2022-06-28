@@ -83,8 +83,8 @@ void ExpectDepositExistsForCreativeInstanceId(
   database::table::Deposits database_table;
   database_table.GetForCreativeInstanceId(
       creative_instance_id,
-      [=](const bool success,
-          const absl::optional<DepositInfo>& deposit_optional) {
+      [](const bool success,
+         const absl::optional<DepositInfo>& deposit_optional) {
         ASSERT_TRUE(success);
 
         EXPECT_TRUE(deposit_optional);
@@ -94,7 +94,7 @@ void ExpectDepositExistsForCreativeInstanceId(
 void ExpectConversionCountEquals(const size_t expected_count) {
   database::table::Conversions database_table;
   database_table.GetAll(
-      [=](const bool success, const ConversionList& conversions) {
+      [expected_count](const bool success, const ConversionList& conversions) {
         ASSERT_TRUE(success);
 
         EXPECT_EQ(expected_count, conversions.size());
@@ -106,12 +106,22 @@ void ExpectConversionCountEquals(const size_t expected_count) {
 class BatAdsSearchResultAdTest : public SearchResultAdObserver,
                                  public UnitTestBase {
  protected:
-  BatAdsSearchResultAdTest()
-      : search_result_ad_(std::make_unique<SearchResultAd>()) {
+  BatAdsSearchResultAdTest() = default;
+
+  ~BatAdsSearchResultAdTest() override = default;
+
+  void SetUp() override {
+    UnitTestBase::SetUp();
+
+    search_result_ad_ = std::make_unique<SearchResultAd>();
     search_result_ad_->AddObserver(this);
   }
 
-  ~BatAdsSearchResultAdTest() override = default;
+  void TearDown() override {
+    search_result_ad_->RemoveObserver(this);
+
+    UnitTestBase::TearDown();
+  }
 
   void FireEvent(const mojom::SearchResultAdPtr& ad_mojom,
                  const mojom::SearchResultAdEventType event_type) {

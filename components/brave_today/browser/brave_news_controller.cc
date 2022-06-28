@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "base/bind.h"
+#include "base/callback_helpers.h"
 #include "base/guid.h"
 #include "base/time/time.h"
 #include "base/values.h"
@@ -86,7 +87,7 @@ BraveNewsController::BraveNewsController(
       base::BindRepeating(&BraveNewsController::ConditionallyStartOrStopTimer,
                           base::Unretained(this)));
 
-  p3a::RecordAtStart(prefs);
+  p3a::RecordAtInit(prefs);
   // Monitor kBraveTodaySources and update feed / publisher cache
   // Start timer of updating feeds, if applicable
   ConditionallyStartOrStopTimer();
@@ -350,9 +351,7 @@ void BraveNewsController::GetDisplayAd(GetDisplayAdCallback callback) {
 }
 
 void BraveNewsController::OnInteractionSessionStarted() {
-  p3a::RecordEverInteracted();
-  p3a::RecordWeeklySessionCount(prefs_, true);
-  p3a::ResetCurrSessionTotalViewsCount(prefs_);
+  p3a::RecordAtSessionStart(prefs_);
 }
 
 void BraveNewsController::OnSessionCardVisitsCountChanged(
@@ -447,7 +446,7 @@ void BraveNewsController::OnDisplayAdPurgeOrphanedEvents() {
     return;
   }
   ads_service_->PurgeOrphanedAdEventsForType(
-      ads::mojom::AdType::kInlineContentAd);
+      ads::mojom::AdType::kInlineContentAd, base::DoNothing());
 }
 
 void BraveNewsController::CheckForPublishersUpdate() {

@@ -54,6 +54,7 @@ class SolanaProviderImpl final : public mojom::SolanaProvider,
       const std::vector<std::string>& encoded_serialized_msgs,
       SignAllTransactionsCallback callback) override;
   void SignAndSendTransaction(const std::string& encoded_serialized_msg,
+                              absl::optional<base::Value> send_options,
                               SignAndSendTransactionCallback callback) override;
   void SignMessage(const std::vector<uint8_t>& blob_msg,
                    const absl::optional<std::string>& display_encoding,
@@ -96,12 +97,26 @@ class SolanaProviderImpl final : public mojom::SolanaProvider,
       const std::string& encoded_serialized_msg,
       const std::string& account);
 
+  void OnRequestConnect(RequestCallback callback,
+                        mojom::SolanaProviderError error,
+                        const std::string& error_message,
+                        const std::string& public_key);
+  void OnRequestSignTransaction(RequestCallback callback,
+                                mojom::SolanaProviderError error,
+                                const std::string& error_message,
+                                const std::vector<uint8_t>& serialized_tx);
+  void OnRequestSignAllTransactions(
+      RequestCallback callback,
+      mojom::SolanaProviderError error,
+      const std::string& error_message,
+      const std::vector<std::vector<uint8_t>>& serialized_tx);
+
   // mojom::KeyringServiceObserver
   void KeyringCreated(const std::string& keyring_id) override {}
   void KeyringRestored(const std::string& keyring_id) override {}
   void KeyringReset() override {}
   void Locked() override {}
-  void Unlocked() override {}
+  void Unlocked() override;
   void BackedUp() override {}
   void AccountsChanged() override {}
   void AutoLockMinutesChanged() override {}
@@ -123,6 +138,10 @@ class SolanaProviderImpl final : public mojom::SolanaProvider,
   base::flat_set<std::string> connected_set_;
   base::flat_map<std::string, SignAndSendTransactionCallback>
       sign_and_send_tx_callbacks_;
+  // Pending callback and arg are for waiting user unlock before connect
+  ConnectCallback pending_connect_callback_;
+  absl::optional<base::Value> pending_connect_arg_;
+
   mojo::Remote<mojom::SolanaEventsListener> events_listener_;
   raw_ptr<KeyringService> keyring_service_ = nullptr;
   raw_ptr<BraveWalletService> brave_wallet_service_ = nullptr;

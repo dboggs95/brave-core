@@ -16,6 +16,7 @@
 #include "bat/ads/internal/account/statement/statement_aliases.h"
 #include "bat/ads/internal/account/utility/redeem_unblinded_payment_tokens/redeem_unblinded_payment_tokens_delegate.h"
 #include "bat/ads/internal/account/utility/refill_unblinded_tokens/refill_unblinded_tokens_delegate.h"
+#include "bat/ads/internal/prefs/pref_manager_observer.h"
 #include "bat/ads/internal/privacy/tokens/unblinded_payment_tokens/unblinded_payment_token_info_aliases.h"
 
 namespace ads {
@@ -34,7 +35,8 @@ class Wallet;
 struct IssuersInfo;
 struct WalletInfo;
 
-class Account final : public ConfirmationsDelegate,
+class Account final : public PrefManagerObserver,
+                      public ConfirmationsDelegate,
                       public IssuersDelegate,
                       public RedeemUnblindedPaymentTokensDelegate,
                       public RefillUnblindedTokensDelegate {
@@ -47,12 +49,8 @@ class Account final : public ConfirmationsDelegate,
   void AddObserver(AccountObserver* observer);
   void RemoveObserver(AccountObserver* observer);
 
-  void OnPrefChanged(const std::string& path);
-
   void SetWallet(const std::string& id, const std::string& seed);
   const WalletInfo& GetWallet() const;
-
-  void MaybeGetIssuers() const;
 
   void Deposit(const std::string& creative_instance_id,
                const AdType& ad_type,
@@ -60,16 +58,20 @@ class Account final : public ConfirmationsDelegate,
 
   void GetStatement(StatementCallback callback) const;
 
-  void ProcessClearingCycle() const;
+  void Process() const;
 
  private:
-  void OnEnabledPrefChanged() const;
+  void MaybeGetIssuers() const;
 
   void ProcessDeposit(const std::string& creative_instance_id,
                       const AdType& ad_type,
                       const ConfirmationType& confirmation_type,
                       const double value) const;
+  void FailedToProcessDeposit(const std::string& creative_instance_id,
+                              const AdType& ad_type,
+                              const ConfirmationType& confirmation_type) const;
 
+  void ProcessClearingCycle() const;
   void ProcessUnclearedTransactions() const;
 
   void WalletDidChange(const WalletInfo& wallet) const;
@@ -88,20 +90,20 @@ class Account final : public ConfirmationsDelegate,
 
   void NotifyStatementOfAccountsDidChange() const;
 
+  // PrefManagerObserver:
+  void OnPrefChanged(const std::string& path) override;
+
   // ConfirmationsDelegate:
   void OnDidConfirm(const ConfirmationInfo& confirmation) override;
   void OnFailedToConfirm(const ConfirmationInfo& confirmation) override;
 
   // IssuersDelegate:
   void OnDidFetchIssuers(const IssuersInfo& issuers) override;
-  void OnFailedToFetchIssuers() override;
 
   // RedeemUnblindedPaymentTokensDelegate:
   void OnDidRedeemUnblindedPaymentTokens(
       const privacy::UnblindedPaymentTokenList& unblinded_payment_tokens)
       override;
-  void OnFailedToRedeemUnblindedPaymentTokens() override;
-  void OnDidRetryRedeemingUnblindedPaymentTokens() override;
 
   // RedeemUnblindedTokensDelegate:
   void OnDidRefillUnblindedTokens() override;

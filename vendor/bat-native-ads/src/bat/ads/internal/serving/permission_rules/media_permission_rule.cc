@@ -6,8 +6,8 @@
 #include "bat/ads/internal/serving/permission_rules/media_permission_rule.h"
 
 #include "bat/ads/internal/serving/permission_rules/permission_rule_features.h"
-#include "bat/ads/internal/tab_manager/tab_info.h"
-#include "bat/ads/internal/tab_manager/tab_manager.h"
+#include "bat/ads/internal/tabs/tab_info.h"
+#include "bat/ads/internal/tabs/tab_manager.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace ads {
@@ -34,12 +34,13 @@ std::string MediaPermissionRule::GetLastMessage() const {
 }
 
 bool MediaPermissionRule::DoesRespectCap() {
-  const absl::optional<TabInfo> tab = TabManager::Get()->GetVisible();
+  const absl::optional<TabInfo> tab =
+      TabManager::GetInstance()->GetVisibleTab();
   if (!tab) {
     return true;
   }
 
-  return !TabManager::Get()->IsPlayingMedia(tab->id);
+  return !TabManager::GetInstance()->IsPlayingMedia(tab->id);
 }
 
 }  // namespace ads

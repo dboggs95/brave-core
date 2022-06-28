@@ -1,3 +1,8 @@
+// Copyright (c) 2022 The Brave Authors. All rights reserved.
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this file,
+// you can obtain one at http://mozilla.org/MPL/2.0/.
+
 import * as React from 'react'
 import { useSelector } from 'react-redux'
 import { WalletState } from '../../../constants/types'
@@ -9,12 +14,13 @@ import {
   TransactionTypeText,
   TransactionText, Divider,
   SectionRow,
+  SectionColumn,
   EditButton
 } from './style'
 import { WarningBoxTitleRow } from '../shared-panel-styles'
 
 interface TransactionInfoProps {
-  onToggleEditGas: () => void
+  onToggleEditGas?: () => void
 }
 export const TransactionInfo = ({
   onToggleEditGas
@@ -24,7 +30,9 @@ export const TransactionInfo = ({
     isERC721SafeTransferFrom,
     isERC721TransferFrom,
     isSolanaTransaction,
-    transactionsNetwork
+    isFilecoinTransaction,
+    transactionsNetwork,
+    sendOptions
   } = usePendingTransactions()
 
   // redux
@@ -62,21 +70,60 @@ export const TransactionInfo = ({
 
   // render
   return <>
-    <SectionRow>
-      <TransactionTitle>
-        {
-          isSolanaTransaction
-            ? getLocale('braveWalletConfirmTransactionTransactionFee')
-            : getLocale('braveWalletConfirmTransactionGasFee')
-        }
-      </TransactionTitle>
+    {!isFilecoinTransaction &&
+      <SectionRow>
+        <TransactionTitle>
+          {
+            isSolanaTransaction
+              ? getLocale('braveWalletConfirmTransactionTransactionFee')
+              : getLocale('braveWalletConfirmTransactionGasFee')
+          }
+        </TransactionTitle>
 
-      {!isSolanaTransaction &&
-        <EditButton onClick={onToggleEditGas}>
-          {getLocale('braveWalletAllowSpendEditButton')}
-        </EditButton>
-      }
-    </SectionRow>
+        {!isSolanaTransaction && onToggleEditGas &&
+          <EditButton onClick={onToggleEditGas}>
+            {getLocale('braveWalletAllowSpendEditButton')}
+          </EditButton>
+        }
+      </SectionRow>
+    }
+
+    {isFilecoinTransaction &&
+      <>
+        {transactionDetails.gasPremium &&
+          <SectionColumn>
+            <TransactionTitle>Gas Premium</TransactionTitle>
+            <TransactionTypeText>
+              {new Amount(transactionDetails.gasPremium)
+                .divideByDecimals(transactionsNetwork.decimals)
+                .formatAsAsset(6, transactionsNetwork.symbol)}
+            </TransactionTypeText>
+          </SectionColumn>
+        }
+
+        {transactionDetails.gasLimit &&
+          <SectionColumn>
+            <TransactionTitle>Gas Limit</TransactionTitle>
+            <TransactionTypeText>
+              {new Amount(transactionDetails.gasLimit)
+                .divideByDecimals(transactionsNetwork.decimals)
+                .formatAsAsset(6, transactionsNetwork.symbol)}
+            </TransactionTypeText>
+          </SectionColumn>
+        }
+
+        {transactionDetails.gasFeeCap &&
+          <SectionColumn>
+            <TransactionTitle>Gas Fee Cap</TransactionTitle>
+            <TransactionTypeText>
+              {new Amount(transactionDetails.gasFeeCap)
+                .divideByDecimals(transactionsNetwork.decimals)
+                .formatAsAsset(6, transactionsNetwork.symbol)}
+            </TransactionTypeText>
+          </SectionColumn>
+        }
+      </>
+    }
 
     <TransactionTypeText>
       {new Amount(transactionDetails.gasFee)
@@ -95,22 +142,28 @@ export const TransactionInfo = ({
       <TransactionTitle>
         {getLocale('braveWalletConfirmTransactionTotal')}
         {' '}
-        ({
-          isSolanaTransaction
-            ? getLocale('braveWalletConfirmTransactionAmountFee')
-            : getLocale('braveWalletConfirmTransactionAmountGas')
-        })
+        {!isFilecoinTransaction &&
+          <>
+            ({
+              isSolanaTransaction
+                ? getLocale('braveWalletConfirmTransactionAmountFee')
+                : getLocale('braveWalletConfirmTransactionAmountGas')
+            })
+          </>
+        }
       </TransactionTitle>
     </WarningBoxTitleRow>
 
     <TransactionTypeText>
-      {transactionValueText} {transactionDetails.symbol} +
+      {transactionValueText} {transactionDetails.symbol}
     </TransactionTypeText>
-    <TransactionTypeText>
-      {new Amount(transactionDetails.gasFee)
-        .divideByDecimals(transactionsNetwork.decimals)
-        .formatAsAsset(6, transactionsNetwork.symbol)}
-    </TransactionTypeText>
+    {!isFilecoinTransaction &&
+      <TransactionTypeText>
+        + {new Amount(transactionDetails.gasFee)
+          .divideByDecimals(transactionsNetwork.decimals)
+          .formatAsAsset(6, transactionsNetwork.symbol)}
+      </TransactionTypeText>
+    }
 
     <TransactionText hasError={false}>
       {transactionDetails.fiatTotal.formatAsFiat(defaultCurrencies.fiat)}
@@ -124,9 +177,31 @@ export const TransactionInfo = ({
 
     {transactionDetails.insufficientFundsForGasError === false &&
       transactionDetails.insufficientFundsError &&
-        <TransactionText hasError={true}>
-          {getLocale('braveWalletSwapInsufficientBalance')}
-        </TransactionText>
+      <TransactionText hasError={true}>
+        {getLocale('braveWalletSwapInsufficientBalance')}
+      </TransactionText>
+    }
+
+    {sendOptions &&
+      <Divider />
+    }
+    {sendOptions?.maxRetries &&
+      <>
+        <TransactionTitle>{getLocale('braveWalletSolanaMaxRetries')}</TransactionTitle>
+        <TransactionTypeText>{Number(sendOptions.maxRetries.maxRetries)}</TransactionTypeText>
+      </>
+    }
+    {sendOptions?.preflightCommitment &&
+      <>
+        <TransactionTitle>{getLocale('braveWalletSolanaPreflightCommitment')}</TransactionTitle>
+        <TransactionTypeText>{sendOptions.preflightCommitment}</TransactionTypeText>
+      </>
+    }
+    {sendOptions?.skipPreflight &&
+      <>
+        <TransactionTitle>{getLocale('braveWalletSolanaSkipPreflight')}</TransactionTitle>
+        <TransactionTypeText>{sendOptions.skipPreflight.skipPreflight.toString()}</TransactionTypeText>
+      </>
     }
   </>
 }

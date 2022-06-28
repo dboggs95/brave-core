@@ -15,14 +15,19 @@ import org.chromium.brave_wallet.mojom.BlockchainRegistry;
 import org.chromium.brave_wallet.mojom.BraveWalletConstants;
 import org.chromium.brave_wallet.mojom.BraveWalletService;
 import org.chromium.brave_wallet.mojom.CoinType;
+import org.chromium.brave_wallet.mojom.DecryptRequest;
 import org.chromium.brave_wallet.mojom.EthTxManagerProxy;
+import org.chromium.brave_wallet.mojom.GetEncryptionPublicKeyRequest;
 import org.chromium.brave_wallet.mojom.JsonRpcService;
 import org.chromium.brave_wallet.mojom.KeyringService;
 import org.chromium.brave_wallet.mojom.SolanaTxManagerProxy;
 import org.chromium.brave_wallet.mojom.TransactionInfo;
 import org.chromium.brave_wallet.mojom.TransactionStatus;
 import org.chromium.brave_wallet.mojom.TxService;
+import org.chromium.chrome.browser.crypto_wallet.activities.BraveWalletDAppsActivity;
 import org.chromium.chrome.browser.crypto_wallet.util.PendingTxHelper;
+import org.chromium.mojo.bindings.Callbacks.Callback1;
+import org.chromium.url.internal.mojom.Origin;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +47,10 @@ public class CryptoModel {
     private final MutableLiveData<Integer> _mCoinTypeMutableLiveData =
             new MutableLiveData<>(CoinType.ETH);
     public final LiveData<Integer> mCoinTypeMutableLiveData = _mCoinTypeMutableLiveData;
+    private final MutableLiveData<BraveWalletDAppsActivity.ActivityType> _mProcessNextDAppsRequest =
+            new MutableLiveData<>();
+    public final LiveData<BraveWalletDAppsActivity.ActivityType> mProcessNextDAppsRequest =
+            _mProcessNextDAppsRequest;
 
     private NetworkModel mNetworkModel;
     // Todo: create a models for portfolio
@@ -78,6 +87,7 @@ public class CryptoModel {
         this.mBraveWalletService = mBraveWalletService;
         this.mAssetRatioService = mAssetRatioService;
         mPendingTxHelper.setTxService(mTxService);
+        mNetworkModel.resetServices(mJsonRpcService);
         init();
     }
 
@@ -100,6 +110,26 @@ public class CryptoModel {
         mNetworkModel.init();
     }
 
+    public void getPublicEncryptionRequest(Callback1<GetEncryptionPublicKeyRequest> onResult) {
+        mBraveWalletService.getPendingGetEncryptionPublicKeyRequests(requests -> {
+            GetEncryptionPublicKeyRequest request = null;
+            if (requests != null && requests.length > 0) {
+                request = requests[0];
+            }
+            onResult.call(request);
+        });
+    }
+
+    public void getDecryptMessageRequest(Callback1<DecryptRequest> onResult) {
+        mBraveWalletService.getPendingDecryptRequests(requests -> {
+            DecryptRequest request = null;
+            if (requests != null && requests.length > 0) {
+                request = requests[0];
+            }
+            onResult.call(request);
+        });
+    }
+
     public void refreshTransactions() {
         mKeyringService.getKeyringInfo(BraveWalletConstants.DEFAULT_KEYRING_ID,
                 keyringInfo -> { mPendingTxHelper.setAccountInfos(keyringInfo.accountInfos); });
@@ -117,12 +147,44 @@ public class CryptoModel {
         return mPendingTxHelper.mTransactionInfoLd;
     }
 
+    public void processPublicEncryptionKey(boolean isApproved, Origin origin) {
+        mBraveWalletService.notifyGetPublicKeyRequestProcessed(isApproved, origin);
+        mBraveWalletService.getPendingGetEncryptionPublicKeyRequests(requests -> {
+            if (requests != null && requests.length > 0) {
+                _mProcessNextDAppsRequest.postValue(
+                        BraveWalletDAppsActivity.ActivityType.GET_ENCRYPTION_PUBLIC_KEY_REQUEST);
+            } else {
+                _mProcessNextDAppsRequest.postValue(BraveWalletDAppsActivity.ActivityType.FINISH);
+            }
+        });
+    }
+
+    public void clearDappsState() {
+        _mProcessNextDAppsRequest.postValue(null);
+    }
+
+    public void processDecryptRequest(boolean isApproved, Origin origin) {
+        mBraveWalletService.notifyDecryptRequestProcessed(isApproved, origin);
+        mBraveWalletService.getPendingDecryptRequests(requests -> {
+            if (requests != null && requests.length > 0) {
+                _mProcessNextDAppsRequest.postValue(
+                        BraveWalletDAppsActivity.ActivityType.DECRYPT_REQUEST);
+            } else {
+                _mProcessNextDAppsRequest.postValue(BraveWalletDAppsActivity.ActivityType.FINISH);
+            }
+        });
+    }
+
     public PendingTxHelper getPendingTxHelper() {
         return mPendingTxHelper;
     }
 
     public CryptoSharedData getSharedData() {
         return mSharedData;
+    }
+
+    public NetworkModel getNetworkModel() {
+        return mNetworkModel;
     }
 
     /*

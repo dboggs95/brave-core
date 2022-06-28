@@ -256,14 +256,7 @@
 <translation id="8218538368080510976">Virhe: Aluetta ei tueta</translation>
 <translation id="5382684862562314222">BATtia ei vielä tueta alueesi Uphold-lompakoissa.</translation>
 <translation id="9074594632540931067">Virhe: BAT ei ole saatavilla</translation>
-<translation id="413458922997276130">Uphold-tilisi on tällä hetkellä estetty.</translation>
-<translation id="3579959767665130790">Virhe: Estetty tili</translation>
-<translation id="6554308597291659562">Upholdin on kerättävä sinusta vähän lisätietoja, ennen kuin koko Uphold-tilin toiminnallisuus voidaan ottaa käyttöön. Yritä uudelleen, kun olet lähettänyt nämä tiedot Uphold-tilillesi.</translation>
 <translation id="6996157559236886133">Virhe: Rajoitettu Uphold-tilin toiminnallisuus</translation>
-<translation id="819370426249314592">Uphold-tilisi odottaa vielä käsittelyä.</translation>
-<translation id="4530453398914580957">Virhe: Odottava tili</translation>
-<translation id="2388470740942086608">Uphold-tilisi on tällä hetkellä rajoitettu.</translation>
-<translation id="3605236342612716051">Virhe: Rajoitettu tili</translation>
 <translation id="3274650021044762770">Ilmeni ongelma, kun selaimesi pyyntöä liittää Brave-palkintosi <ph name="PROVIDER"/>-tiliisi vahvistettiin. Voit <ph name="BEGIN_LINK"/>ottaa yhteyttä tukeen<ph name="END_LINK"/> saadaksesi apua.</translation>
 <translation id="1316066811927496401">Virhe: pyyntöä ei voitu vahvistaa</translation>
 <translation id="1737873393693460829">Käynnistämällä [[title]] hyväksyt <ph name="BEGIN_LINK1"/>käyttöehdot<ph name="END_LINK1"/> ja <ph name="BEGIN_LINK2"/>yksityisyyskäytännön<ph name="END_LINK2"/>.</translation>
@@ -674,7 +667,6 @@
 <translation id="8328137586971750853">Brave tulee käyttämään Infuraa lähettääkseen Ethereum JSON-RPC -kutsuja älykkääseen sopimukseen Ethereum-nimipalvelusta selvittääkseen .eth-verkkotunnuksen nimen hakupyynnöt. Jos otat tämän käyttöön, Infura näkee .eth-verkkotunnuksen, jossa yrität käydä, mutta se ei pysty näkemään muita verkkotunnuksia. Katso Infuran <ph name="BEGIN_INFURA_TOU_LINK"/>käyttöehtoja<ph name="END_INFURA_TOU_LINK"/> ja <ph name="BEGIN_INFURA_PRIVACY_LINK"/>tietosuojakäytäntöä<ph name="END_INFURA_PRIVACY_LINK"/>.</translation>
 <translation id="7378412287463452336">Jatka Infura-palvelimella</translation>
 <translation id="2356070529366658676">Kysy</translation>
-<translation id="2218918398178303658">DNS yli HTTPS</translation>
 <translation id="1448289340149908413">Ethereum</translation>
 <translation id="2468755552460246661">Verkkotunnus estetty</translation>
 <translation id="6393849031898466746">Tämä sivusto voi yrittää seurata sinua muilla sivustoilla</translation>
@@ -868,7 +860,6 @@
 <translation id="1191686659164947414">Maksutapahtuma voidaan suorittaa etukäteen</translation>
 <translation id="632241521608275119">Myöhästymisen toleranssi</translation>
 <translation id="4500473291496079954">Vanhenee:</translation>
-<translation id="8093033115658137576">0x-osoite tai -url</translation>
 <translation id="2860280209982026951">Brave käyttää <ph name="LINK_BEFORE"/>0x:ää<ph name="LINK_AFTER"/> DEX-aggregaattorina.</translation>
 <translation id="151946611346774041">0x käsittelee Ethereum-osoitteen ja IP-osoitteen suorittaakseen tapahtuman (mukaan lukien hintatarjousten saaminen). 0x käyttää näitä tietoja VAIN tapahtumien käsittelyyn.</translation>
 <translation id="4626407663177532837">Hintatarjous sisältää 0,875 %:n Brave-maksun.</translation>
@@ -876,7 +867,6 @@
 <translation id="6575120282593094155">Sinulla ei vielä ole <ph name="ACCOUNT_TYPE"/>-tiliä. Luo sellainen nyt?</translation>
 <translation id="2704606927547763573">Kopioitu</translation>
 <translation id="1420318137760245955">Tervetuloa uuteen Brave-lompakkoon</translation>
-<translation id="8303434745767477417">Pidä kryptovaroja mukanasi. Seuraa portfolion kehitystä ja ole vuorovaikutuksessa web3-sovellusten ja hajautettujen sovellusten kanssa. Vaihda, sijoita ja lainaa DeFillä avulla. Kaikki tämä suoraan yksityisestä Brave-selaimesta. Ei laajennuksia, ei latausta.</translation>
 <translation id="6972754398087986839">Aloitusopas</translation>
 <translation id="375882617301124395">Varmuuskopioi kryptolompakkosi</translation>
 <translation id="180032279811483155">Seuraavassa vaiheessa näet <ph name="RECOVERY_PHRASE_LENGTH"/>-sanan palautuslauseen, jonka avulla voit palauttaa ensisijaiset kryptotilisi. Säilytä sitä turvallisessa paikassa. Palautuslause on ainoa tapa saada tilisi takaisin, jos salasana unohtuu, laite katoaa tai varastetaan tai jos haluat vaihtaa lompakkoa.</translation>
@@ -905,7 +895,6 @@
 <translation id="163697698769819510">Varmuuskopioi lompakkosi nyt, jotta voit suojata varojasi ja varmistaa, ettet menetä pääsyä niihin.</translation>
 <translation id="1018806299114415224">Varmuuskopioi nyt</translation>
 <translation id="5234764350956374838">Piilota</translation>
-<translation id="4075073132992924258">Brave Wallet -lompakkoa ei ole määritetty oletusarvoiseksi lompakoksi, eikä se vastaa web3-sovelluksiin tai hajautettuihin sovelluksiin. Siirry asetuksiin vaihtaaksesi oletusarvoista lompakkoa.</translation>
 <translation id="4362717653795263052">Palauta ensisijaiset kryptotilit</translation>
 <translation id="3038077262567136741">Anna palautuslause palauttaaksesi Brave Wallet -lompakon kryptotilin.</translation>
 <translation id="955918646509748368">Annettu palautuslause on virheellinen.</translation>
@@ -916,8 +905,6 @@
 <translation id="8624315169751085215">Kopioi leikepöydälle</translation>
 <translation id="1121335910737476837">Ensisijaiset kryptotilit</translation>
 <translation id="6969147029062037757">Tuodut tilit</translation>
-<translation id="5668765612885835803">Voit luoda ensisijaiset tilit Brave-lompakossa, jotka voidaan varmuuskopioida tai palauttaa palautuslauseellasi. Jos haluat lukea lisää eri tyyppisistä tileistä, käy tilien ohjesivulla</translation>
-<translation id="2471916999505901943">Näitä tilejä voidaan käyttää web3-sovellusten ja hajautettujen sovellusten kanssa. Huomaa, että toissijaisia tilejä ei voida palauttaa palautuslauseella ensisijaisen tilin varmuuskopiotiedoista.</translation>
 <translation id="1940465339426637378">Omaisuudet</translation>
 <translation id="2236507293802791911">Näkyvät varat</translation>
 <translation id="7525067979554623046">Luo</translation>
@@ -1047,7 +1034,6 @@
 <translation id="3890989020011724401">Uusi tili</translation>
 <translation id="7257603403519636638">Näytä tilin omaisuuserät</translation>
 <translation id="2092132085082887098">Tilin omaisuuserät</translation>
-<translation id="5723696625900399845">Käytä suojatusti web3:a ja kaikkia kryptovarojasi tämän paneelin avulla.</translation>
 <translation id="4460220693591349571">TOIMINTOTYYPPI</translation>
 <translation id="838933475572692615">HEX-TIEDOT</translation>
 <translation id="2240831799756994975">TAVUA</translation>
@@ -1059,13 +1045,11 @@
 <translation id="7739762330714405363">Käytä samaa salasanaa</translation>
 <translation id="1085027414516521238">MetaMask</translation>
 <translation id="7102907656918333773">Tuo kohteesta <ph name="WALLET_EXTENSION"/></translation>
-<translation id="8897114903450789862">Tuo <ph name="WALLET_EXTENSION"/>-tilit Brave Wallet -lompakkoon. Nauti nopeammasta ja turvallisemmasta tavasta hallita kryptovaroja ja olla vuorovaikutuksessa web3-sovellusten ja hajautettujen sovellusten kanssa.</translation>
 <translation id="4237840336687249184">MetaMask-salasana</translation>
 <translation id="2381605201035323535">kryptolompakot</translation>
 <translation id="2770851145415891830">Olemassa olevat kryptolompakot havaittu</translation>
 <translation id="4938145712652668388">Kun napsautat Aloita-kohtaa, tuot vanhat Crypto Wallet -lompakot uuteen Brave Wallet -kokemukseen ja pääset nauttimaan kaikista edellä mainituista eduista. Kokeile sitä ja kerro meille mielipiteesi!</translation>
 <translation id="2237759620789871865">Jos haluat mieluummin ohittaa tuonnin ja säilyttää vanhan Crypto Wallet -lompakkokokemuksen, siirry Brave-selaimen <ph name="LINK_BEFORE"/>asetuksiin<ph name="LINK_AFTER"/> ja muuta oletusarvoinen asetus Crypto Wallet -lompakoksi. Voit myös tuoda, kokeilla uutta Brave Wallet -lompakkoa ja vaihtaa takaisin milloin tahansa.</translation>
-<translation id="3301259443293676544">Tuo Brave Wallet -lompakkoon antamalla olemassa olevien kryptolompakkojen salasana. Nauti nopeammasta ja turvallisemmasta tavasta hallita kryptovaroja ja olla vuorovaikutuksessa web3-sovellusten ja hajautettujen sovellusten kanssa.</translation>
 <translation id="9099900965604225657">Kryptolompakkojen salasana</translation>
 <translation id="4020495774166914146">Olen hukannut salasanani ja palautuslauseeni, luo uusi lompakko.</translation>
 <translation id="6344138931392227467"><ph name="DEVICE_NAME"/>-laite liitetty</translation>
@@ -1217,6 +1201,7 @@
 <translation id="3795015906457257780">Tarkastelet tätä sivustoa ilman Braven yksityisyyssuojausta.</translation>
 <translation id="7194012750329511146">Brave-suojaukset
 <ph name="NUMBER"/> seurainta, mainosta jne. estetty</translation>
+<translation id="4292121526390005808">Estetyt skriptit</translation>
 <translation id="1742469581923031760">Yhdistetään…</translation>
 <translation id="1287487756047817908">Yhteyttä katkaistaan…</translation>
 <translation id="2325196879156848326">Yhdistäminen epäonnistui</translation>
@@ -1235,11 +1220,23 @@
 <translation id="1751947227857853925">Nopea ja rajoittamaton, jopa 100 Mbit/s</translation>
 <translation id="1400240082805528049">Ympärivuorokautinen tuki</translation>
 <translation id="8463313539532697053">Odota hetki, lataus käynnissä…</translation>
+<translation id="4613076894734402086">Muokkaa maksutapaa</translation>
+<translation id="1839021455997460752">Sähköpostiosoitteesi</translation>
+<translation id="5154702632169343078">Aihe</translation>
+<translation id="6625978880678465492">Valitse syy</translation>
 <translation id="6687228121145903051">VPN:ään ei saada yhteyttä (muu virhe)</translation>
 <translation id="9184988385244077767">Ei Internet-yhteyttä yhdistämisen jälkeen</translation>
 <translation id="21570240866965662">Hidas yhteys</translation>
 <translation id="1219475260382643267">Verkkosivusto ei toimi</translation>
 <translation id="7138678301420049075">Muu</translation>
+<translation id="1387340358507240698">Kuvaile ongelmaasi</translation>
+<translation id="501818585183973587">Valitse ne tiedot, jotka voit jakaa kanssamme</translation>
+<translation id="3195618332367441234">Mitä enemmän tietoja jaat, sitä helpompi on tukihenkilöstön auttaa sinua.</translation>
+<translation id="5682143294773821728">VPN:n isäntänimi</translation>
+<translation id="24242621812020123">Sovellusversio:</translation>
+<translation id="6676791921618140305">OS-versio:</translation>
+<translation id="1156325797949437777">Tuki tarjotaan yhteistyössä Guardianin kanssa.</translation>
+<translation id="3307461350293459700">VPN-yhteys epäonnistui. Yritä muodostaa yhteys uudelleen ja varmista, että napsautat Salli-painiketta ottaaksesi Braven VPN-määrityksen käyttöön.</translation>
 <translation id="7586151660465233733">Lisää markkinoita sivustolla <ph name="SITE_NAME"/></translation>
 <translation id="952067063131306699">Katso markkinoita ja käy kauppaa kryptolla FTX:ssä</translation>
 <translation id="5963745988819586370">Markkinat</translation>

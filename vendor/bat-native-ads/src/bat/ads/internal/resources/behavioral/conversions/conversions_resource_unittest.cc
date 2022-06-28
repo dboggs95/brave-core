@@ -6,6 +6,7 @@
 #include "bat/ads/internal/resources/behavioral/conversions/conversions_resource.h"
 
 #include "bat/ads/internal/base/unittest/unittest_base.h"
+#include "bat/ads/internal/resources/behavioral/conversions/conversions_info.h"
 
 // npm run test -- brave_unit_tests --filter=BatAds*
 
@@ -39,8 +40,7 @@ TEST_F(BatAdsConversionsResourceTest, Get) {
   task_environment_.RunUntilIdle();
 
   // Act
-  ConversionIdPatternMap conversion_id_patterns =
-      resource.get()->conversion_id_patterns;
+  ConversionIdPatternMap conversion_id_patterns = resource.get()->id_patterns;
 
   // Assert
   EXPECT_EQ(2u, conversion_id_patterns.size());

@@ -15,7 +15,7 @@ namespace {
 
 constexpr int kMaximumHtmlLengthToClassify = (1 << 20);
 constexpr int kMaximumSubLen = 6;
-constexpr int kDefaultBucketCount = 10000;
+constexpr int kDefaultBucketCount = 10'000;
 
 }  // namespace
 
@@ -34,11 +34,6 @@ HashVectorizer::HashVectorizer(const int bucket_count,
     substring_sizes_.push_back(subgrams[i]);
   }
   bucket_count_ = bucket_count;
-}
-
-HashVectorizer::HashVectorizer(const HashVectorizer& hash_vectorizer) {
-  bucket_count_ = hash_vectorizer.GetBucketCount();
-  substring_sizes_ = hash_vectorizer.GetSubstringSizes();
 }
 
 std::vector<uint32_t> HashVectorizer::GetSubstringSizes() const {

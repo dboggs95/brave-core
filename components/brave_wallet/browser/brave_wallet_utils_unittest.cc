@@ -16,20 +16,26 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/test/gtest_util.h"
+#include "base/test/scoped_feature_list.h"
 #include "base/values.h"
 #include "brave/components/brave_wallet/browser/brave_wallet_constants.h"
 #include "brave/components/brave_wallet/browser/brave_wallet_prefs.h"
 #include "brave/components/brave_wallet/browser/brave_wallet_utils.h"
 #include "brave/components/brave_wallet/browser/pref_names.h"
+#include "brave/components/brave_wallet/common/brave_wallet.mojom-shared.h"
 #include "brave/components/brave_wallet/common/brave_wallet.mojom.h"
+#include "brave/components/brave_wallet/common/features.h"
 #include "brave/components/brave_wallet/common/value_conversion_utils.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/scoped_user_pref_update.h"
 #include "components/prefs/testing_pref_service.h"
 #include "components/sync_preferences/testing_pref_service_syncable.h"
+#include "testing/gmock/include/gmock/gmock.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "url/origin.h"
+
+using testing::ElementsAreArray;
 
 namespace brave_wallet {
 
@@ -53,7 +59,21 @@ void UpdateCustomNetworks(PrefService* prefs,
 
 }  // namespace
 
-TEST(BraveWalletUtilsUnitTest, Mnemonic) {
+class BraveWalletUtilsUnitTest : public testing::Test {
+ public:
+  void SetUp() override {
+    feature_list_.InitAndEnableFeatureWithParameters(
+        brave_wallet::features::kBraveWalletFilecoinFeature,
+        {{brave_wallet::features::kFilecoinTestnetEnabled.name, "true"}});
+  }
+
+  ~BraveWalletUtilsUnitTest() override = default;
+
+ private:
+  base::test::ScopedFeatureList feature_list_;
+};
+
+TEST_F(BraveWalletUtilsUnitTest, Mnemonic) {
   const struct {
     const char* entropy;
     const char* mnemonic;
@@ -220,7 +240,7 @@ TEST(BraveWalletUtilsUnitTest, Mnemonic) {
   }
 }
 
-TEST(BraveWalletUtilsUnitTest, MnemonicToSeedAndEntropy) {
+TEST_F(BraveWalletUtilsUnitTest, MnemonicToSeedAndEntropy) {
   const char* valid_mnemonic =
       "kingdom possible coast island six arrow fluid spell chunk loud glue "
       "street";
@@ -239,7 +259,7 @@ TEST(BraveWalletUtilsUnitTest, MnemonicToSeedAndEntropy) {
   EXPECT_EQ(MnemonicToEntropy(""), nullptr);
 }
 
-TEST(BraveWalletUtilsUnitTest, IsValidMnemonic) {
+TEST_F(BraveWalletUtilsUnitTest, IsValidMnemonic) {
   EXPECT_TRUE(
       IsValidMnemonic("kingdom possible coast island six arrow fluid "
                       "spell chunk loud glue street"));
@@ -250,7 +270,7 @@ TEST(BraveWalletUtilsUnitTest, IsValidMnemonic) {
   EXPECT_FALSE(IsValidMnemonic(""));
 }
 
-TEST(BraveWalletUtilsUnitTest, EncodeString) {
+TEST_F(BraveWalletUtilsUnitTest, EncodeString) {
   std::string output;
   EXPECT_TRUE(EncodeString("one", &output));
   EXPECT_EQ(output,
@@ -285,7 +305,7 @@ TEST(BraveWalletUtilsUnitTest, EncodeString) {
   EXPECT_FALSE(EncodeString(invalid_input, &output));
 }
 
-TEST(BraveWalletUtilsUnitTest, EncodeStringArray) {
+TEST_F(BraveWalletUtilsUnitTest, EncodeStringArray) {
   std::vector<std::string> input({"one", "two", "three"});
   std::string output;
   EXPECT_TRUE(EncodeStringArray(input, &output));
@@ -383,7 +403,7 @@ TEST(BraveWalletUtilsUnitTest, EncodeStringArray) {
   EXPECT_FALSE(EncodeStringArray(input, &output));
 }
 
-TEST(BraveWalletUtilsUnitTest, DecodeString) {
+TEST_F(BraveWalletUtilsUnitTest, DecodeString) {
   std::string output;
   EXPECT_TRUE(DecodeString(
       0,
@@ -452,7 +472,7 @@ TEST(BraveWalletUtilsUnitTest, DecodeString) {
       &output));
 }
 
-TEST(BraveWalletUtilsUnitTest, DecodeStringArray) {
+TEST_F(BraveWalletUtilsUnitTest, DecodeStringArray) {
   std::vector<std::string> output;
   EXPECT_TRUE(DecodeStringArray(
       // count of elements in input array
@@ -633,7 +653,7 @@ TEST(BraveWalletUtilsUnitTest, DecodeStringArray) {
       &output));
 }
 
-TEST(BraveWalletUtilsUnitTest, TransactionReceiptAndValue) {
+TEST_F(BraveWalletUtilsUnitTest, TransactionReceiptAndValue) {
   TransactionReceipt tx_receipt;
   tx_receipt.transaction_hash =
       "0xb903239f8543d04b5dc1ba6579132b143087c68db1b2168786408fcbce568238";
@@ -652,7 +672,7 @@ TEST(BraveWalletUtilsUnitTest, TransactionReceiptAndValue) {
   EXPECT_EQ(tx_receipt, *tx_receipt_from_value);
 }
 
-TEST(BraveWalletUtilsUnitTest, GetAllEthCustomChainsTest) {
+TEST_F(BraveWalletUtilsUnitTest, GetAllEthCustomChainsTest) {
   TestingPrefServiceSimple prefs;
   prefs.registry()->RegisterDictionaryPref(kBraveWalletCustomNetworks);
   ASSERT_TRUE(GetAllEthCustomChains(&prefs).empty());
@@ -677,7 +697,7 @@ TEST(BraveWalletUtilsUnitTest, GetAllEthCustomChainsTest) {
   EXPECT_EQ(chain2, *GetAllEthCustomChains(&prefs)[1]);
 }
 
-TEST(BraveWalletUtilsUnitTest, KnownEthChainExists) {
+TEST_F(BraveWalletUtilsUnitTest, KnownEthChainExists) {
   TestingPrefServiceSimple prefs;
   prefs.registry()->RegisterDictionaryPref(kBraveWalletCustomNetworks);
   prefs.registry()->RegisterBooleanPref(kSupportEip1559OnLocalhostChain, false);
@@ -701,7 +721,7 @@ TEST(BraveWalletUtilsUnitTest, KnownEthChainExists) {
   EXPECT_FALSE(KnownEthChainExists(chain.chain_id));
 }
 
-TEST(BraveWalletUtilsUnitTest, CustomEthChainExists) {
+TEST_F(BraveWalletUtilsUnitTest, CustomEthChainExists) {
   TestingPrefServiceSimple prefs;
   prefs.registry()->RegisterDictionaryPref(kBraveWalletCustomNetworks);
   prefs.registry()->RegisterBooleanPref(kSupportEip1559OnLocalhostChain, false);
@@ -730,15 +750,16 @@ TEST(BraveWalletUtilsUnitTest, CustomEthChainExists) {
   EXPECT_EQ(GetAllEthCustomChains(&prefs).size(), 2u);
 }
 
-TEST(BraveWalletUtilsUnitTest, GetAllChainsTest) {
+TEST_F(BraveWalletUtilsUnitTest, GetAllChainsTest) {
   TestingPrefServiceSimple prefs;
   prefs.registry()->RegisterDictionaryPref(kBraveWalletCustomNetworks);
   prefs.registry()->RegisterBooleanPref(kSupportEip1559OnLocalhostChain, false);
 
   std::vector<base::Value> values;
-  mojom::NetworkInfo chain1("chain_id", "chain_name", {"https://url1.com"},
+  mojom::NetworkInfo chain1(mojom::kPolygonMainnetChainId, "chain_name",
                             {"https://url1.com"}, {"https://url1.com"},
-                            "symbol_name", "symbol", 11, mojom::CoinType::ETH,
+                            {"https://url1.com"}, "symbol_name", "symbol", 11,
+                            mojom::CoinType::ETH,
                             mojom::NetworkInfoData::NewEthData(
                                 mojom::NetworkInfoDataETH::New(false)));
   values.push_back(EthNetworkInfoToValue(chain1));
@@ -752,15 +773,19 @@ TEST(BraveWalletUtilsUnitTest, GetAllChainsTest) {
 
   auto known_chains = GetAllKnownEthChains(&prefs);
   auto custom_chains = GetAllEthCustomChains(&prefs);
+  EXPECT_EQ(*custom_chains[0], chain1);
+  EXPECT_EQ(*custom_chains[1], chain2);
 
+  // Custom Polygon chain takes place of known one.
+  // Custom unknown chain becomes last.
   auto expected_chains = std::move(known_chains);
-  std::move(custom_chains.begin(), custom_chains.end(),
-            std::back_inserter(expected_chains));
+  EXPECT_EQ(expected_chains[1]->chain_id, mojom::kPolygonMainnetChainId);
+  expected_chains[1] = chain1.Clone();
+  expected_chains.push_back(chain2.Clone());
 
   auto all_chains = GetAllChains(&prefs, mojom::CoinType::ETH);
 
   EXPECT_EQ(expected_chains.size(), all_chains.size());
-
   for (size_t i = 0; i < all_chains.size(); i++) {
     ASSERT_TRUE(all_chains.at(i).Equals(expected_chains.at(i)));
   }
@@ -780,7 +805,7 @@ TEST(BraveWalletUtilsUnitTest, GetAllChainsTest) {
   EXPECT_EQ(fil_chains[2]->chain_id, mojom::kLocalhostChainId);
 }
 
-TEST(BraveWalletUtilsUnitTest, GetNetworkURLTest) {
+TEST_F(BraveWalletUtilsUnitTest, GetNetworkURLTest) {
   TestingPrefServiceSimple prefs;
   prefs.registry()->RegisterDictionaryPref(kBraveWalletCustomNetworks);
   prefs.registry()->RegisterBooleanPref(kSupportEip1559OnLocalhostChain, false);
@@ -814,7 +839,7 @@ TEST(BraveWalletUtilsUnitTest, GetNetworkURLTest) {
             GetNetworkURL(&prefs, chain2.chain_id, mojom::CoinType::ETH));
 }
 
-TEST(BraveWalletUtilsUnitTest, GetNetworkURLForKnownChains) {
+TEST_F(BraveWalletUtilsUnitTest, GetNetworkURLForKnownChains) {
   TestingPrefServiceSimple prefs;
   prefs.registry()->RegisterDictionaryPref(kBraveWalletCustomNetworks);
   prefs.registry()->RegisterBooleanPref(kSupportEip1559OnLocalhostChain, false);
@@ -836,7 +861,7 @@ TEST(BraveWalletUtilsUnitTest, GetNetworkURLForKnownChains) {
   }
 }
 
-TEST(BraveWalletUtilsUnitTest, GetSolanaSubdomainForKnownChainId) {
+TEST_F(BraveWalletUtilsUnitTest, GetSolanaSubdomainForKnownChainId) {
   for (const auto& chain : GetAllKnownSolChains()) {
     auto subdomain = GetSolanaSubdomainForKnownChainId(chain->chain_id);
     bool expected = (chain->chain_id == brave_wallet::mojom::kLocalhostChainId);
@@ -844,7 +869,7 @@ TEST(BraveWalletUtilsUnitTest, GetSolanaSubdomainForKnownChainId) {
   }
 }
 
-TEST(BraveWalletUtilsUnitTest, GetFilecoinSubdomainForKnownChainId) {
+TEST_F(BraveWalletUtilsUnitTest, GetFilecoinSubdomainForKnownChainId) {
   for (const auto& chain : GetAllKnownFilChains()) {
     auto subdomain = GetFilecoinSubdomainForKnownChainId(chain->chain_id);
     bool expected = (chain->chain_id == brave_wallet::mojom::kLocalhostChainId);
@@ -852,7 +877,7 @@ TEST(BraveWalletUtilsUnitTest, GetFilecoinSubdomainForKnownChainId) {
   }
 }
 
-TEST(BraveWalletUtilsUnitTest, GetKnownEthChain) {
+TEST_F(BraveWalletUtilsUnitTest, GetKnownEthChain) {
   TestingPrefServiceSimple prefs;
   prefs.registry()->RegisterDictionaryPref(kBraveWalletCustomNetworks);
   prefs.registry()->RegisterBooleanPref(kSupportEip1559OnLocalhostChain, false);
@@ -883,7 +908,7 @@ TEST(BraveWalletUtilsUnitTest, GetKnownEthChain) {
   EXPECT_EQ(network->data->get_eth_data()->is_eip1559, true);
 }
 
-TEST(BraveWalletUtilsUnitTest, GetCustomEthChain) {
+TEST_F(BraveWalletUtilsUnitTest, GetCustomEthChain) {
   TestingPrefServiceSimple prefs;
   prefs.registry()->RegisterDictionaryPref(kBraveWalletCustomNetworks);
   prefs.registry()->RegisterBooleanPref(kSupportEip1559OnLocalhostChain, false);
@@ -904,7 +929,7 @@ TEST(BraveWalletUtilsUnitTest, GetCustomEthChain) {
   EXPECT_EQ(*network, chain);
 }
 
-TEST(BraveWalletUtilsUnitTest, GetChain) {
+TEST_F(BraveWalletUtilsUnitTest, GetChain) {
   TestingPrefServiceSimple prefs;
   prefs.registry()->RegisterDictionaryPref(kBraveWalletCustomNetworks);
   prefs.registry()->RegisterBooleanPref(kSupportEip1559OnLocalhostChain, false);
@@ -953,13 +978,19 @@ TEST(BraveWalletUtilsUnitTest, GetChain) {
   EXPECT_EQ(GetChain(&prefs, "f", mojom::CoinType::FIL), fil_mainnet.Clone());
 }
 
-TEST(BraveWalletUtilsUnitTest, GetAllKnownEthNetworkIds) {
-  EXPECT_EQ(GetAllKnownEthNetworkIds(),
-            std::vector<std::string>({"mainnet", "rinkeby", "ropsten", "goerli",
-                                      "kovan", "http://localhost:7545/"}));
+TEST_F(BraveWalletUtilsUnitTest, GetAllKnownEthNetworkIds) {
+  const std::vector<std::string> expected_network_ids(
+      {"mainnet", mojom::kPolygonMainnetChainId,
+       mojom::kBinanceSmartChainMainnetChainId, mojom::kCeloMainnetChainId,
+       mojom::kAvalancheMainnetChainId, mojom::kFantomMainnetChainId,
+       mojom::kOptimismMainnetChainId, "rinkeby", "ropsten", "goerli", "kovan",
+       "http://localhost:7545/"});
+  ASSERT_EQ(GetAllKnownNetworksForTesting().size(),
+            expected_network_ids.size());
+  EXPECT_EQ(GetAllKnownEthNetworkIds(), expected_network_ids);
 }
 
-TEST(BraveWalletUtilsUnitTest, GetKnownEthNetworkId) {
+TEST_F(BraveWalletUtilsUnitTest, GetKnownEthNetworkId) {
   EXPECT_EQ(GetKnownEthNetworkId(mojom::kLocalhostChainId),
             "http://localhost:7545/");
   EXPECT_EQ(GetKnownEthNetworkId(mojom::kMainnetChainId), "mainnet");
@@ -969,7 +1000,7 @@ TEST(BraveWalletUtilsUnitTest, GetKnownEthNetworkId) {
   EXPECT_EQ(GetKnownEthNetworkId(mojom::kKovanChainId), "kovan");
 }
 
-TEST(BraveWalletUtilsUnitTest, GetKnownSolNetworkId) {
+TEST_F(BraveWalletUtilsUnitTest, GetKnownSolNetworkId) {
   EXPECT_EQ(GetKnownSolNetworkId(mojom::kLocalhostChainId),
             "http://localhost:8899/");
   EXPECT_EQ(GetKnownSolNetworkId(mojom::kSolanaMainnet), "mainnet");
@@ -977,14 +1008,14 @@ TEST(BraveWalletUtilsUnitTest, GetKnownSolNetworkId) {
   EXPECT_EQ(GetKnownSolNetworkId(mojom::kSolanaDevnet), "devnet");
 }
 
-TEST(BraveWalletUtilsUnitTest, GetKnownFilNetworkId) {
+TEST_F(BraveWalletUtilsUnitTest, GetKnownFilNetworkId) {
   EXPECT_EQ(GetKnownFilNetworkId(mojom::kLocalhostChainId),
             "http://localhost:1234/rpc/v0");
   EXPECT_EQ(GetKnownFilNetworkId(mojom::kFilecoinMainnet), "mainnet");
   EXPECT_EQ(GetKnownFilNetworkId(mojom::kFilecoinTestnet), "testnet");
 }
 
-TEST(BraveWalletUtilsUnitTest, GetNetworkId) {
+TEST_F(BraveWalletUtilsUnitTest, GetNetworkId) {
   TestingPrefServiceSimple prefs;
   prefs.registry()->RegisterDictionaryPref(kBraveWalletCustomNetworks);
   prefs.registry()->RegisterBooleanPref(kSupportEip1559OnLocalhostChain, false);
@@ -1013,6 +1044,12 @@ TEST(BraveWalletUtilsUnitTest, GetNetworkId) {
   EXPECT_EQ(GetNetworkId(&prefs, mojom::CoinType::ETH, "chain_id"), "chain_id");
   EXPECT_EQ(GetNetworkId(&prefs, mojom::CoinType::ETH, "chain_id2"),
             "chain_id2");
+  EXPECT_EQ(
+      GetNetworkId(&prefs, mojom::CoinType::ETH, mojom::kPolygonMainnetChainId),
+      mojom::kPolygonMainnetChainId);
+  EXPECT_EQ(GetNetworkId(&prefs, mojom::CoinType::ETH,
+                         mojom::kBinanceSmartChainMainnetChainId),
+            mojom::kBinanceSmartChainMainnetChainId);
 
   EXPECT_EQ(GetNetworkId(&prefs, mojom::CoinType::SOL, mojom::kSolanaMainnet),
             "mainnet");
@@ -1022,7 +1059,7 @@ TEST(BraveWalletUtilsUnitTest, GetNetworkId) {
             "devnet");
 }
 
-TEST(BraveWalletUtilsUnitTest, AddCustomNetwork) {
+TEST_F(BraveWalletUtilsUnitTest, AddCustomNetwork) {
   TestingPrefServiceSimple prefs;
   prefs.registry()->RegisterDictionaryPref(kBraveWalletCustomNetworks);
   prefs.registry()->RegisterBooleanPref(kSupportEip1559OnLocalhostChain, false);
@@ -1079,7 +1116,7 @@ TEST(BraveWalletUtilsUnitTest, AddCustomNetwork) {
   EXPECT_EQ(*asset_list2[0].FindBoolKey("visible"), true);
 }
 
-TEST(BraveWalletUtilsUnitTest, CustomNetworkMatchesKnownNetwork) {
+TEST_F(BraveWalletUtilsUnitTest, CustomNetworkMatchesKnownNetwork) {
   TestingPrefServiceSimple prefs;
   prefs.registry()->RegisterDictionaryPref(kBraveWalletCustomNetworks);
   prefs.registry()->RegisterBooleanPref(kSupportEip1559OnLocalhostChain, false);
@@ -1126,7 +1163,7 @@ TEST(BraveWalletUtilsUnitTest, CustomNetworkMatchesKnownNetwork) {
       GURL("https://mainnet-polygon.brave.com/"));
 }
 
-TEST(BraveWalletUtilsUnitTest, RemoveCustomNetwork) {
+TEST_F(BraveWalletUtilsUnitTest, RemoveCustomNetwork) {
   TestingPrefServiceSimple prefs;
   prefs.registry()->RegisterDictionaryPref(kBraveWalletCustomNetworks);
   prefs.registry()->RegisterBooleanPref(kSupportEip1559OnLocalhostChain, false);
@@ -1148,7 +1185,38 @@ TEST(BraveWalletUtilsUnitTest, RemoveCustomNetwork) {
   RemoveCustomNetwork(&prefs, "unknown network");
 }
 
-TEST(BraveWalletUtilsUnitTest, GetFirstValidChainURL) {
+TEST_F(BraveWalletUtilsUnitTest, HiddenNetworks) {
+  TestingPrefServiceSimple prefs;
+  prefs.registry()->RegisterDictionaryPref(kBraveWalletHiddenNetworks);
+
+  EXPECT_THAT(GetAllHiddenNetworks(&prefs, mojom::CoinType::ETH),
+              ElementsAreArray<std::string>({}));
+
+  AddHiddenNetwork(&prefs, mojom::CoinType::ETH, "0x123");
+  EXPECT_THAT(GetAllHiddenNetworks(&prefs, mojom::CoinType::ETH),
+              ElementsAreArray({"0x123"}));
+  AddHiddenNetwork(&prefs, mojom::CoinType::ETH, "0x123");
+  EXPECT_THAT(GetAllHiddenNetworks(&prefs, mojom::CoinType::ETH),
+              ElementsAreArray({"0x123"}));
+
+  RemoveHiddenNetwork(&prefs, mojom::CoinType::ETH, "0x555");
+  EXPECT_THAT(GetAllHiddenNetworks(&prefs, mojom::CoinType::ETH),
+              ElementsAreArray({"0x123"}));
+
+  AddHiddenNetwork(&prefs, mojom::CoinType::ETH, "0x7");
+  EXPECT_THAT(GetAllHiddenNetworks(&prefs, mojom::CoinType::ETH),
+              ElementsAreArray({"0x123", "0x7"}));
+
+  RemoveHiddenNetwork(&prefs, mojom::CoinType::ETH, "0x123");
+  EXPECT_THAT(GetAllHiddenNetworks(&prefs, mojom::CoinType::ETH),
+              ElementsAreArray({"0x7"}));
+
+  RemoveHiddenNetwork(&prefs, mojom::CoinType::ETH, "0x7");
+  EXPECT_THAT(GetAllHiddenNetworks(&prefs, mojom::CoinType::ETH),
+              ElementsAreArray<std::string>({}));
+}
+
+TEST_F(BraveWalletUtilsUnitTest, GetFirstValidChainURL) {
   std::vector<std::string> urls = {
       "https://goerli.infura.io/v3/${INFURA_API_KEY}",
       "https://goerli.alchemy.io/v3/${ALCHEMY_API_KEY}",
@@ -1170,7 +1238,7 @@ TEST(BraveWalletUtilsUnitTest, GetFirstValidChainURL) {
   EXPECT_EQ(GetFirstValidChainURL(std::vector<std::string>()), GURL());
 }
 
-TEST(BraveWalletUtilsUnitTest, GetPrefKeyForCoinType) {
+TEST_F(BraveWalletUtilsUnitTest, GetPrefKeyForCoinType) {
   auto key = GetPrefKeyForCoinType(mojom::CoinType::ETH);
   EXPECT_EQ(key, kEthereumPrefKey);
   key = GetPrefKeyForCoinType(mojom::CoinType::FIL);
@@ -1182,7 +1250,7 @@ TEST(BraveWalletUtilsUnitTest, GetPrefKeyForCoinType) {
       GetPrefKeyForCoinType(static_cast<mojom::CoinType>(2016)));
 }
 
-TEST(BraveWalletUtilsUnitTest, GetCurrentChainId) {
+TEST_F(BraveWalletUtilsUnitTest, GetCurrentChainId) {
   sync_preferences::TestingPrefServiceSyncable prefs;
   RegisterProfilePrefs(prefs.registry());
   // default value
@@ -1194,7 +1262,7 @@ TEST(BraveWalletUtilsUnitTest, GetCurrentChainId) {
             mojom::kFilecoinMainnet);
 }
 
-TEST(BraveWalletUtilsUnitTest, eTLDPlusOne) {
+TEST_F(BraveWalletUtilsUnitTest, eTLDPlusOne) {
   EXPECT_EQ("", eTLDPlusOne(url::Origin()));
   EXPECT_EQ("brave.com",
             eTLDPlusOne(url::Origin::Create(GURL("https://blog.brave.com"))));
@@ -1208,7 +1276,7 @@ TEST(BraveWalletUtilsUnitTest, eTLDPlusOne) {
   EXPECT_EQ("", eTLDPlusOne(url::Origin::Create(GURL("https://github.io"))));
 }
 
-TEST(BraveWalletUtilsUnitTest, MakeOriginInfo) {
+TEST_F(BraveWalletUtilsUnitTest, MakeOriginInfo) {
   auto origin_info =
       MakeOriginInfo(url::Origin::Create(GURL("https://blog.brave.com:443")));
   EXPECT_EQ(url::Origin::Create(GURL("https://blog.brave.com")),

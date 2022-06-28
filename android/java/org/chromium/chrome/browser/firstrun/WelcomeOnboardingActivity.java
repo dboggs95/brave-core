@@ -193,6 +193,7 @@ public class WelcomeOnboardingActivity extends FirstRunActivityBase {
             mTvCard.setText(getResources().getString(R.string.p3a_title));
             mBtnPositive.setText(getResources().getString(R.string.continue_text));
             mBtnNegative.setText(getResources().getString(R.string.learn_more_onboarding));
+            mBtnNegative.setVisibility(View.VISIBLE);
 
             if (PackageUtils.isFirstInstall(this)
                     && (getPackageName().equals(BraveConstants.BRAVE_NIGHTLY_PACKAGE_NAME)
@@ -324,8 +325,10 @@ public class WelcomeOnboardingActivity extends FirstRunActivityBase {
     public void onBackPressed() {}
 
     @Override
-    protected void triggerLayoutInflation() {
-        mFirstRunFlowSequencer = new FirstRunFlowSequencer(this) {
+    public void triggerLayoutInflation() {
+        super.triggerLayoutInflation();
+
+        mFirstRunFlowSequencer = new FirstRunFlowSequencer(this, getChildAccountStatusSupplier()) {
             @Override
             public void onFlowIsKnown(Bundle freProperties) {
                 initializeViews();

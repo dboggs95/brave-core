@@ -8,8 +8,8 @@
 
 #include <cstdint>
 
-#include "bat/ads/internal/browser_manager/browser_manager_observer.h"
-#include "bat/ads/internal/tab_manager/tab_manager_observer.h"
+#include "bat/ads/internal/browser/browser_manager_observer.h"
+#include "bat/ads/internal/tabs/tab_manager_observer.h"
 #include "bat/ads/internal/user_interaction/browsing/user_activity_event_info_aliases.h"
 #include "bat/ads/internal/user_interaction/browsing/user_activity_event_types.h"
 #include "bat/ads/page_transition_types.h"
@@ -20,6 +20,8 @@ class TimeDelta;
 
 namespace ads {
 
+struct TabInfo;
+
 class UserActivityManager final : public BrowserManagerObserver,
                                   public TabManagerObserver {
  public:
@@ -29,7 +31,7 @@ class UserActivityManager final : public BrowserManagerObserver,
   UserActivityManager(const UserActivityManager&) = delete;
   UserActivityManager& operator=(const UserActivityManager&) = delete;
 
-  static UserActivityManager* Get();
+  static UserActivityManager* GetInstance();
 
   static bool HasInstance();
 
@@ -50,8 +52,8 @@ class UserActivityManager final : public BrowserManagerObserver,
 
   // TabManagerObserver:
   void OnTabDidChangeFocus(const int32_t id) override;
-  void OnTabDidChange(const int32_t id) override;
-  void OnDidOpenNewTab(const int32_t id) override;
+  void OnTabDidChange(const TabInfo& tab) override;
+  void OnDidOpenNewTab(const TabInfo& tab) override;
   void OnDidCloseTab(const int32_t id) override;
   void OnTabDidStartPlayingMedia(const int32_t id) override;
   void OnTabDidStopPlayingMedia(const int32_t id) override;

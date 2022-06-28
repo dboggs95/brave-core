@@ -20,6 +20,7 @@
 #include "brave/components/brave_wallet/browser/tx_service.h"
 #include "brave/components/brave_wallet/common/brave_wallet_constants.h"
 #include "brave/components/brave_wallet/common/solana_utils.h"
+#include "brave/components/brave_wallet/common/web3_provider_constants.h"
 #include "components/grit/brave_components_strings.h"
 #include "ui/base/l10n/l10n_util.h"
 
@@ -30,6 +31,10 @@ namespace {
 // When onlyIfTrusted is true, the request would be rejected when selected
 // account doesn't have permission.
 constexpr char kOnlyIfTrustedOption[] = "onlyIfTrusted";
+constexpr char kMessage[] = "message";
+constexpr char kPublicKey[] = "publicKey";
+constexpr char kSignature[] = "signature";
+constexpr char kOptions[] = "options";
 
 }  // namespace
 
@@ -84,6 +89,22 @@ void SolanaProviderImpl::Connect(absl::optional<base::Value> arg,
     }
   }
 
+  if (keyring_service_->IsLocked(mojom::kSolanaKeyringId)) {
+    // Reject the request when we are already waiting for unlock and we will
+    // also reject eagerly connect when wallet is locked.
+    if (pending_connect_callback_ || is_eagerly_connect) {
+      std::move(callback).Run(
+          mojom::SolanaProviderError::kUserRejectedRequest,
+          l10n_util::GetStringUTF8(IDS_WALLET_USER_REJECTED_REQUEST), "");
+      return;
+    }
+    pending_connect_callback_ = std::move(callback);
+    pending_connect_arg_ = std::move(arg);
+    keyring_service_->RequestUnlock();
+    delegate_->ShowPanel();
+    return;
+  }
+
   delegate_->IsAccountAllowed(
       mojom::CoinType::SOL, *account,
       base::BindOnce(&SolanaProviderImpl::ContinueConnect,
@@ -131,26 +152,25 @@ absl::optional<SolanaMessage> SolanaProviderImpl::GetDeserializedMessage(
     return absl::nullopt;
   }
 
-  auto msg = SolanaMessage::Deserialize(message_bytes);
-  if (!msg) {
+  auto msg_and_num_of_signers = SolanaMessage::Deserialize(message_bytes);
+  if (!msg_and_num_of_signers) {
     return absl::nullopt;
   }
+  auto& msg = msg_and_num_of_signers->first;
+  auto& num_of_signers = msg_and_num_of_signers->second;
 
   // Sanity check after deserialization:
   // 1. Fee payer should be the current selected account.
-  // 2. Serialize the created message object and encode in Base58 will be the
   //    same as original encoded message.
-  // 3. Only one signer (the fee payer) is allowed, we do not support multisig
+  // 2. Only one signer (the fee payer) is allowed, we do not support multisig
   //    for dApp requests currently.
-  if (account != msg->fee_payer())
+  // Note: We cannot check Base58Encode(msg->Serialize()) is equal to the
+  // original encoded message passed in because the order of accounts with the
+  // same is_signer and is_writable value can be different between different
+  // implementation. See https://github.com/brave/brave-browser/issues/23542
+  // for more details.
+  if (account != msg.fee_payer() || num_of_signers != 1)
     return absl::nullopt;
-  std::vector<std::string> signers;
-  auto serialized_message = msg->Serialize(&signers);
-  if (!serialized_message ||
-      Base58Encode(*serialized_message) != encoded_serialized_msg ||
-      signers.size() != 1) {
-    return absl::nullopt;
-  }
 
   return msg;
 }
@@ -293,6 +313,7 @@ void SolanaProviderImpl::OnSignAllTransactionsRequestProcessed(
 
 void SolanaProviderImpl::SignAndSendTransaction(
     const std::string& encoded_serialized_msg,
+    absl::optional<base::Value> send_options,
     SignAndSendTransactionCallback callback) {
   absl::optional<std::string> account =
       keyring_service_->GetSelectedAccount(mojom::CoinType::SOL);
@@ -319,6 +340,9 @@ void SolanaProviderImpl::SignAndSendTransaction(
 
   SolanaTransaction tx = SolanaTransaction(std::move(*msg));
   tx.set_tx_type(mojom::TransactionType::SolanaDappSignAndSendTransaction);
+  tx.set_send_options(
+      SolanaTransaction::SendOptions::FromValue(std::move(send_options)));
+
   tx_service_->AddUnapprovedTransaction(
       mojom::TxDataUnion::NewSolanaTxData(tx.ToSolanaTxData()),
       tx.message()->fee_payer(), delegate_->GetOrigin(),
@@ -357,8 +381,8 @@ void SolanaProviderImpl::OnTransactionStatusChanged(
   auto callback = std::move(sign_and_send_tx_callbacks_[tx_meta_id]);
   base::Value result(base::Value::Type::DICTIONARY);
   if (tx_status == mojom::TransactionStatus::Submitted) {
-    result.SetStringKey("publicKey", tx_info->from_address);
-    result.SetStringKey("signature", tx_info->tx_hash);
+    result.SetStringKey(kPublicKey, tx_info->from_address);
+    result.SetStringKey(kSignature, tx_info->tx_hash);
     std::move(callback).Run(mojom::SolanaProviderError::kSuccess, "",
                             std::move(result));
   } else if (tx_status == mojom::TransactionStatus::Rejected) {
@@ -420,10 +444,104 @@ void SolanaProviderImpl::SignMessage(
 }
 
 void SolanaProviderImpl::Request(base::Value arg, RequestCallback callback) {
-  base::Value result(base::Value::Type::DICTIONARY);
-  NOTIMPLEMENTED();
-  std::move(callback).Run(mojom::SolanaProviderError::kInternalError, "",
-                          std::move(result));
+  DCHECK(arg.is_dict());
+  const std::string* method = arg.GetDict().FindString("method");
+  if (!method) {
+    std::move(callback).Run(mojom::SolanaProviderError::kParsingError,
+                            l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR),
+                            base::Value(base::Value::Type::DICTIONARY));
+    return;
+  }
+  base::Value::Dict* params = arg.GetDict().FindDict("params");
+
+  // params is optional for connect and disconnect doesn't need it
+  if (!params && (*method == solana::kSignTransaction ||
+                  *method == solana::kSignAndSendTransaction ||
+                  *method == solana::kSignAllTransactions ||
+                  *method == solana::kSignMessage)) {
+    std::move(callback).Run(mojom::SolanaProviderError::kParsingError,
+                            l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR),
+                            base::Value(base::Value::Type::DICTIONARY));
+    return;
+  }
+
+  if (*method == solana::kConnect) {
+    absl::optional<base::Value> option = absl::nullopt;
+    if (params)
+      option = base::Value(std::move(*params));
+    Connect(std::move(option),
+            base::BindOnce(&SolanaProviderImpl::OnRequestConnect,
+                           weak_factory_.GetWeakPtr(), std::move(callback)));
+  } else if (*method == solana::kDisconnect) {
+    Disconnect();
+    std::move(callback).Run(mojom::SolanaProviderError::kSuccess, "",
+                            base::Value(base::Value::Type::DICTIONARY));
+  } else if (*method == solana::kSignTransaction) {
+    const std::string* message = params->FindString(kMessage);
+    if (!message) {
+      std::move(callback).Run(
+          mojom::SolanaProviderError::kParsingError,
+          l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR),
+          base::Value(base::Value::Type::DICTIONARY));
+      return;
+    }
+    SignTransaction(
+        *message,
+        base::BindOnce(&SolanaProviderImpl::OnRequestSignTransaction,
+                       weak_factory_.GetWeakPtr(), std::move(callback)));
+  } else if (*method == solana::kSignAndSendTransaction) {
+    const std::string* message = params->FindString(kMessage);
+    if (!message) {
+      std::move(callback).Run(
+          mojom::SolanaProviderError::kParsingError,
+          l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR),
+          base::Value(base::Value::Type::DICTIONARY));
+      return;
+    }
+    base::Value::Dict* options_dict = params->FindDict(kOptions);
+    absl::optional<base::Value> options = absl::nullopt;
+    if (options_dict)
+      options = base::Value(std::move(*options_dict));
+    SignAndSendTransaction(*message, std::move(options), std::move(callback));
+  } else if (*method == solana::kSignAllTransactions) {
+    const base::Value::List* messages = params->FindList(kMessage);
+    if (!messages) {
+      std::move(callback).Run(
+          mojom::SolanaProviderError::kParsingError,
+          l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR),
+          base::Value(base::Value::Type::DICTIONARY));
+      return;
+    }
+    std::vector<std::string> encoded_serialized_msgs;
+    for (const auto& message : *messages) {
+      const std::string* encoded_serialized_msg = message.GetIfString();
+      if (encoded_serialized_msg)
+        encoded_serialized_msgs.push_back(*encoded_serialized_msg);
+    }
+    SignAllTransactions(
+        encoded_serialized_msgs,
+        base::BindOnce(&SolanaProviderImpl::OnRequestSignAllTransactions,
+                       weak_factory_.GetWeakPtr(), std::move(callback)));
+  } else if (*method == solana::kSignMessage) {
+    const auto* message = params->FindBlob(kMessage);
+    if (!message) {
+      std::move(callback).Run(
+          mojom::SolanaProviderError::kParsingError,
+          l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR),
+          base::Value(base::Value::Type::DICTIONARY));
+      return;
+    }
+    const std::string* display_str = params->FindString("display");
+    absl::optional<std::string> display = absl::nullopt;
+    if (display_str)
+      display = *display_str;
+    SignMessage(*message, std::move(display), std::move(callback));
+  } else {
+    std::move(callback).Run(
+        mojom::SolanaProviderError::kMethodNotFound,
+        l10n_util::GetStringUTF8(IDS_WALLET_REQUEST_PROCESSING_ERROR),
+        base::Value(base::Value::Type::DICTIONARY));
+  }
 }
 
 bool SolanaProviderImpl::IsAccountConnected(const std::string& account) {
@@ -496,11 +614,66 @@ void SolanaProviderImpl::OnSignMessageRequestProcessed(
   } else {
     auto signature = keyring_service_->SignMessage(mojom::kSolanaKeyringId,
                                                    account, blob_msg);
-    result.GetDict().Set("publicKey", account);
-    result.GetDict().Set("signature", Base58Encode(signature));
+    result.GetDict().Set(kPublicKey, account);
+    result.GetDict().Set(kSignature, Base58Encode(signature));
 
     std::move(callback).Run(mojom::SolanaProviderError::kSuccess, "",
                             std::move(result));
+  }
+}
+
+void SolanaProviderImpl::OnRequestConnect(RequestCallback callback,
+                                          mojom::SolanaProviderError error,
+                                          const std::string& error_message,
+                                          const std::string& public_key) {
+  base::Value result(base::Value::Type::DICTIONARY);
+  if (error == mojom::SolanaProviderError::kSuccess)
+    result.GetDict().Set(kPublicKey, public_key);
+  std::move(callback).Run(error, error_message, std::move(result));
+}
+
+void SolanaProviderImpl::OnRequestSignTransaction(
+    RequestCallback callback,
+    mojom::SolanaProviderError error,
+    const std::string& error_message,
+    const std::vector<uint8_t>& serialized_tx) {
+  base::Value result(base::Value::Type::DICTIONARY);
+  if (error == mojom::SolanaProviderError::kSuccess) {
+    auto tx = SolanaTransaction::FromSignedTransactionBytes(serialized_tx);
+    DCHECK(tx);
+    result.GetDict().Set(kPublicKey, tx->message()->fee_payer());
+    result.GetDict().Set(kSignature, Base58Encode(tx->signatures()));
+  }
+  std::move(callback).Run(error, error_message, std::move(result));
+}
+
+void SolanaProviderImpl::OnRequestSignAllTransactions(
+    RequestCallback callback,
+    mojom::SolanaProviderError error,
+    const std::string& error_message,
+    const std::vector<std::vector<uint8_t>>& serialized_txs) {
+  base::Value result(base::Value::Type::DICTIONARY);
+  if (error == mojom::SolanaProviderError::kSuccess) {
+    base::Value signatures(base::Value::Type::LIST);
+    for (const auto& serialized_tx : serialized_txs) {
+      auto tx = SolanaTransaction::FromSignedTransactionBytes(serialized_tx);
+      DCHECK(tx);
+      if (!result.GetDict().contains(kPublicKey)) {
+        // The API expect only one signer (the selected account) from all
+        // transactions in the array.
+        result.GetDict().Set(kPublicKey, tx->message()->fee_payer());
+      }
+      signatures.Append(Base58Encode(tx->signatures()));
+    }
+    result.GetDict().Set(kSignature, std::move(signatures));
+  }
+  std::move(callback).Run(error, error_message, std::move(result));
+}
+
+void SolanaProviderImpl::Unlocked() {
+  if (pending_connect_callback_) {
+    Connect(std::move(pending_connect_arg_),
+            std::move(pending_connect_callback_));
   }
 }
 

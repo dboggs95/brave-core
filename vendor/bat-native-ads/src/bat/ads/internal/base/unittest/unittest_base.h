@@ -15,13 +15,16 @@
 #include "bat/ads/internal/ads_client_mock.h"
 #include "bat/ads/internal/ads_impl.h"
 #include "bat/ads/internal/base/platform/platform_helper_mock.h"
-#include "bat/ads/internal/browser_manager/browser_manager.h"
+#include "bat/ads/internal/browser/browser_manager.h"
 #include "bat/ads/internal/covariates/covariate_manager.h"
 #include "bat/ads/internal/database/database_manager.h"
 #include "bat/ads/internal/deprecated/client/client_state_manager.h"
 #include "bat/ads/internal/deprecated/confirmations/confirmation_state_manager.h"
 #include "bat/ads/internal/diagnostics/diagnostic_manager.h"
-#include "bat/ads/internal/tab_manager/tab_manager.h"
+#include "bat/ads/internal/locale/locale_manager.h"
+#include "bat/ads/internal/prefs/pref_manager.h"
+#include "bat/ads/internal/resources/resource_manager.h"
+#include "bat/ads/internal/tabs/tab_manager.h"
 #include "bat/ads/internal/user_interaction/browsing/user_activity_manager.h"
 #include "brave/components/l10n/browser/locale_helper_mock.h"
 #include "testing/gmock/include/gmock/gmock.h"
@@ -35,6 +38,8 @@ class TimeDelta;
 namespace ads {
 
 constexpr char kDatabaseFilename[] = "database.sqlite";
+
+constexpr char kDefaultLocale[] = "en-US";
 
 class Database;
 class NotificationAdManager;
@@ -152,7 +157,10 @@ class UnitTestBase : public testing::Test {
   std::unique_ptr<CovariateManager> covariate_manager_;
   std::unique_ptr<DatabaseManager> database_manager_;
   std::unique_ptr<DiagnosticManager> diagnostic_manager_;
+  std::unique_ptr<LocaleManager> locale_manager_;
   std::unique_ptr<NotificationAdManager> notification_ad_manager_;
+  std::unique_ptr<PrefManager> pref_manager_;
+  std::unique_ptr<ResourceManager> resource_manager_;
   std::unique_ptr<TabManager> tab_manager_;
   std::unique_ptr<UserActivityManager> user_activity_manager_;
 };

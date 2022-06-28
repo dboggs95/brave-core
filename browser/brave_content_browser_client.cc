@@ -14,7 +14,6 @@
 #include "base/json/json_reader.h"
 #include "base/strings/strcat.h"
 #include "base/system/sys_info.h"
-#include "base/task/post_task.h"
 #include "brave/browser/brave_browser_main_extra_parts.h"
 #include "brave/browser/brave_browser_process.h"
 #include "brave/browser/brave_shields/brave_shields_web_contents_observer.h"
@@ -172,6 +171,7 @@ using extensions::ChromeContentBrowserClientExtensionsPart;
 #endif
 
 #if BUILDFLAG(ENABLE_BRAVE_VPN) && !BUILDFLAG(IS_ANDROID)
+#include "brave/browser/brave_vpn/brave_vpn_service_factory.h"
 #include "brave/browser/ui/webui/brave_vpn/vpn_panel_ui.h"
 #include "brave/components/brave_vpn/brave_vpn_utils.h"
 #include "brave/components/brave_vpn/mojom/brave_vpn.mojom.h"
@@ -196,7 +196,9 @@ using extensions::ChromeContentBrowserClientExtensionsPart;
 #include "brave/browser/ui/webui/brave_wallet/wallet_page_ui.h"
 #include "brave/browser/ui/webui/brave_wallet/wallet_panel_ui.h"
 #include "brave/browser/ui/webui/new_tab_page/brave_new_tab_ui.h"
+#include "brave/browser/ui/webui/private_new_tab_page/brave_private_new_tab_ui.h"
 #include "brave/components/brave_new_tab_ui/brave_new_tab_page.mojom.h"
+#include "brave/components/brave_private_new_tab_ui/common/brave_private_new_tab.mojom.h"
 #include "brave/components/brave_shields/common/brave_shields_panel.mojom.h"
 #include "brave/components/brave_today/common/brave_news.mojom.h"
 #include "brave/components/brave_today/common/features.h"
@@ -370,6 +372,15 @@ void BindBraveSearchDefaultHost(
   }
 }
 
+#if BUILDFLAG(ENABLE_BRAVE_VPN) && !BUILDFLAG(IS_ANDROID)
+void MaybeBindBraveVpnImpl(
+    content::RenderFrameHost* const frame_host,
+    mojo::PendingReceiver<brave_vpn::mojom::ServiceHandler> receiver) {
+  auto* context = frame_host->GetBrowserContext();
+  brave_vpn::BraveVpnServiceFactory::BindForContext(context,
+                                                    std::move(receiver));
+}
+#endif
 void MaybeBindSkusSdkImpl(
     content::RenderFrameHost* const frame_host,
     mojo::PendingReceiver<skus::mojom::SkusService> receiver) {
@@ -384,10 +395,9 @@ BraveContentBrowserClient::BraveContentBrowserClient() {}
 BraveContentBrowserClient::~BraveContentBrowserClient() {}
 
 std::unique_ptr<content::BrowserMainParts>
-BraveContentBrowserClient::CreateBrowserMainParts(
-    content::MainFunctionParams parameters) {
+BraveContentBrowserClient::CreateBrowserMainParts(bool is_integration_test) {
   std::unique_ptr<content::BrowserMainParts> main_parts =
-      ChromeContentBrowserClient::CreateBrowserMainParts(std::move(parameters));
+      ChromeContentBrowserClient::CreateBrowserMainParts(is_integration_test);
   ChromeBrowserMainParts* chrome_main_parts =
       static_cast<ChromeBrowserMainParts*>(main_parts.get());
   chrome_main_parts->AddParts(std::make_unique<BraveBrowserMainExtraParts>());
@@ -529,12 +539,17 @@ void BraveContentBrowserClient::RegisterBrowserInterfaceBindersForFrame(
 
   map->Add<skus::mojom::SkusService>(
       base::BindRepeating(&MaybeBindSkusSdkImpl));
-
+#if BUILDFLAG(ENABLE_BRAVE_VPN) && !BUILDFLAG(IS_ANDROID)
+  map->Add<brave_vpn::mojom::ServiceHandler>(
+      base::BindRepeating(&MaybeBindBraveVpnImpl));
+#endif
 #if !BUILDFLAG(IS_ANDROID)
   chrome::internal::RegisterWebUIControllerInterfaceBinder<
       brave_wallet::mojom::PanelHandlerFactory, WalletPanelUI>(map);
   chrome::internal::RegisterWebUIControllerInterfaceBinder<
       brave_wallet::mojom::PageHandlerFactory, WalletPageUI>(map);
+  chrome::internal::RegisterWebUIControllerInterfaceBinder<
+      brave_private_new_tab::mojom::PageHandler, BravePrivateNewTabUI>(map);
   if (base::FeatureList::IsEnabled(
           brave_shields::features::kBraveShieldsPanelV2)) {
     chrome::internal::RegisterWebUIControllerInterfaceBinder<
@@ -804,7 +819,7 @@ void BraveContentBrowserClient::MaybeHideReferrer(
   }
 
   Profile* profile = Profile::FromBrowserContext(browser_context);
-  const bool allow_referrers = brave_shields::AllowReferrers(
+  const bool allow_referrers = brave_shields::AreReferrersAllowed(
       HostContentSettingsMapFactory::GetForProfile(profile), document_url);
   const bool shields_up = brave_shields::GetBraveShieldsEnabled(
       HostContentSettingsMapFactory::GetForProfile(profile), document_url);
@@ -845,6 +860,17 @@ bool BraveContentBrowserClient::HandleURLOverrideRewrite(
     *url = url->ReplaceComponents(replacements);
     return true;
   }
+
+#if !BUILDFLAG(IS_ANDROID)
+  if (url->host() == kAdblockHost) {
+    GURL::Replacements replacements;
+    replacements.SetSchemeStr(content::kChromeUIScheme);
+    replacements.SetHostStr(chrome::kChromeUISettingsHost);
+    replacements.SetPathStr(kContentFiltersPath);
+    *url = url->ReplaceComponents(replacements);
+    return false;
+  }
+#endif
 
   // no special win10 welcome page
   if (url->host() == chrome::kChromeUIWelcomeHost) {

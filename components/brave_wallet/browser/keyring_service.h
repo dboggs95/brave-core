@@ -56,13 +56,6 @@ class KeyringService : public KeyedService, public mojom::KeyringService {
   static const base::Value* GetPrefForKeyring(PrefService* prefs,
                                               const std::string& key,
                                               const std::string& id);
-  static const base::Value* GetImportedAccountsPrefForKeyring(
-      PrefService* prefs,
-      const std::string& id);
-  static void SetImportedAccountsPrefForKeyring(PrefService* prefs,
-                                                base::Value value,
-                                                const std::string& id);
-
   static base::Value* GetPrefForKeyringUpdate(PrefService* prefs,
                                               const std::string& key,
                                               const std::string& id);
@@ -85,8 +78,6 @@ class KeyringService : public KeyedService, public mojom::KeyringService {
   static std::string GetAccountNameForKeyring(PrefService* prefs,
                                               const std::string& account_path,
                                               const std::string& id);
-  static const base::Value* GetAccountMetasForKeyring(PrefService* prefs,
-                                                      const std::string& id);
   static std::string GetAccountAddressForKeyring(
       PrefService* prefs,
       const std::string& account_path,
@@ -114,18 +105,10 @@ class KeyringService : public KeyedService, public mojom::KeyringService {
   static std::vector<ImportedAccountInfo> GetImportedAccountsForKeyring(
       PrefService* prefs,
       const std::string& id);
-  static const base::Value* GetHardwareAccountsPrefForKeyring(
-      PrefService* prefs,
-      const std::string& id);
   static void RemoveImportedAccountForKeyring(PrefService* prefs,
                                               const std::string& address,
                                               const std::string& id);
-  static base::Value* GetHardwareAccountsPrefForKeyringUpdate(
-      PrefService* prefs,
-      const std::string& id);
 
-  static void MigrateObosoleteFilecoinImportedPrefs(base::Value* keyring_pref);
-  static void MigrateObosoleteFilecoinHardwarePrefs(base::Value* keyring_pref);
   mojo::PendingRemote<mojom::KeyringService> MakeRemote();
   void Bind(mojo::PendingReceiver<mojom::KeyringService> receiver);
 
@@ -165,10 +148,6 @@ class KeyringService : public KeyedService, public mojom::KeyringService {
       std::vector<mojom::HardwareWalletAccountPtr> info) override;
   void RemoveHardwareAccount(const std::string& address,
                              mojom::CoinType coin) override;
-  void GetPrivateKeyForImportedAccount(
-      const std::string& address,
-      mojom::CoinType coin,
-      GetPrivateKeyForImportedAccountCallback callback) override;
   void RemoveImportedAccount(const std::string& address,
                              mojom::CoinType coin,
                              RemoveImportedAccountCallback callback) override;
@@ -290,10 +269,6 @@ class KeyringService : public KeyedService, public mojom::KeyringService {
   FRIEND_TEST_ALL_PREFIXES(KeyringServiceUnitTest, ImportFilecoinAccounts);
   FRIEND_TEST_ALL_PREFIXES(KeyringServiceUnitTest, PreCreateEncryptors);
   FRIEND_TEST_ALL_PREFIXES(KeyringServiceUnitTest, HardwareAccounts);
-  FRIEND_TEST_ALL_PREFIXES(KeyringServiceUnitTest,
-                           AccountMetasForFilecoinKeyring);
-  FRIEND_TEST_ALL_PREFIXES(KeyringServiceUnitTest,
-                           SwitchAccountsOnNetworkChange);
 
   FRIEND_TEST_ALL_PREFIXES(KeyringServiceAccountDiscoveryUnitTest,
                            AccountDiscovery);
@@ -319,8 +294,6 @@ class KeyringService : public KeyedService, public mojom::KeyringService {
   HDKeyring* GetHDKeyringById(const std::string& keyring_id) const;
   std::vector<mojom::AccountInfoPtr> GetHardwareAccountsSync(
       const std::string& keyring_id) const;
-  std::vector<uint8_t> GetPrivateKeyFromKeyring(const std::string& address,
-                                                const std::string& keyring_id);
   // Address will be returned when success
   absl::optional<std::string> ImportAccountForKeyring(
       const std::string& keyring_id,

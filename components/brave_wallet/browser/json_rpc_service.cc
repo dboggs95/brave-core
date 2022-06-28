@@ -13,6 +13,7 @@
 #include "base/environment.h"
 #include "base/json/json_writer.h"
 #include "base/no_destructor.h"
+#include "base/notreached.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brave/components/brave_wallet/browser/brave_wallet_prefs.h"
 #include "brave/components/brave_wallet/browser/brave_wallet_utils.h"
@@ -492,6 +493,41 @@ void JsonRpcService::GetAllNetworks(mojom::CoinType coin,
   std::move(callback).Run(GetAllChains(prefs_, coin));
 }
 
+void JsonRpcService::GetCustomNetworks(mojom::CoinType coin,
+                                       GetCustomNetworksCallback callback) {
+  if (coin != mojom::CoinType::ETH) {
+    NOTREACHED();
+    std::move(callback).Run({});
+    return;
+  }
+
+  std::vector<std::string> chain_ids;
+  for (const auto& it : brave_wallet::GetAllEthCustomChains(prefs_)) {
+    chain_ids.push_back(it->chain_id);
+  }
+  std::move(callback).Run(std::move(chain_ids));
+}
+
+void JsonRpcService::GetKnownNetworks(mojom::CoinType coin,
+                                      GetKnownNetworksCallback callback) {
+  if (coin != mojom::CoinType::ETH) {
+    NOTREACHED();
+    std::move(callback).Run({});
+    return;
+  }
+
+  std::vector<std::string> chain_ids;
+  for (const auto& it : brave_wallet::GetAllKnownEthChains(prefs_)) {
+    chain_ids.push_back(it->chain_id);
+  }
+  std::move(callback).Run(std::move(chain_ids));
+}
+
+void JsonRpcService::GetHiddenNetworks(mojom::CoinType coin,
+                                       GetHiddenNetworksCallback callback) {
+  std::move(callback).Run(GetAllHiddenNetworks(prefs_, coin));
+}
+
 std::string JsonRpcService::GetNetworkUrl(mojom::CoinType coin) const {
   return network_urls_.contains(coin) ? network_urls_.at(coin).spec()
                                       : std::string();
@@ -634,10 +670,7 @@ void JsonRpcService::GetBalance(const std::string& address,
     auto internal_callback =
         base::BindOnce(&JsonRpcService::OnFilGetBalance,
                        weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-    // TODO(spyloggsster): Make sure network url is available when known
-    // Filcoin networks are added.
-    RequestInternal(fil::getBalance(address), true,
-                    network_urls_[mojom::CoinType::FIL],
+    RequestInternal(fil::getBalance(address), true, network_url,
                     std::move(internal_callback));
     return;
   }
@@ -2185,6 +2218,7 @@ void JsonRpcService::OnSendFilecoinTransaction(
 
 void JsonRpcService::SendSolanaTransaction(
     const std::string& signed_tx,
+    absl::optional<SolanaTransaction::SendOptions> send_options,
     SendSolanaTransactionCallback callback) {
   if (signed_tx.empty()) {
     std::move(callback).Run(
@@ -2196,8 +2230,8 @@ void JsonRpcService::SendSolanaTransaction(
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnSendSolanaTransaction,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  RequestInternal(solana::sendTransaction(signed_tx), true,
-                  network_urls_[mojom::CoinType::SOL],
+  RequestInternal(solana::sendTransaction(signed_tx, std::move(send_options)),
+                  true, network_urls_[mojom::CoinType::SOL],
                   std::move(internal_callback));
 }
 

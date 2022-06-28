@@ -17,7 +17,6 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/guid.h"
-#include "base/task/post_task.h"
 #include "brave/browser/brave_browser_process.h"
 #include "brave/browser/ntp_background_images/view_counter_service_factory.h"
 #include "brave/build/android/jni_headers/NTPBackgroundImagesBridge_jni.h"
@@ -148,9 +147,6 @@ base::android::ScopedJavaLocalRef<jobject>
 NTPBackgroundImagesBridge::CreateBrandedWallpaper(base::Value* data) {
   JNIEnv* env = AttachCurrentThread();
 
-  const std::string wallpaper_id = base::GenerateGUID();
-  view_counter_service_->BrandedWallpaperWillBeDisplayed(wallpaper_id);
-
   auto* image_path =
       data->FindStringKey(ntp_background_images::kWallpaperImagePathKey);
   auto* logo_image_path =
@@ -171,6 +167,11 @@ NTPBackgroundImagesBridge::CreateBrandedWallpaper(base::Value* data) {
       data->FindBoolKey(ntp_background_images::kIsSponsoredKey).value_or(false);
   auto* creative_instance_id =
       data->FindStringKey(ntp_background_images::kCreativeInstanceIDKey);
+  const std::string* wallpaper_id =
+      data->FindStringKey(ntp_background_images::kWallpaperIDKey);
+
+  view_counter_service_->BrandedWallpaperWillBeDisplayed(wallpaper_id,
+                                                         creative_instance_id);
 
   return Java_NTPBackgroundImagesBridge_createBrandedWallpaper(
       env, ConvertUTF8ToJavaString(env, *image_path), focal_point_x,
@@ -180,7 +181,7 @@ NTPBackgroundImagesBridge::CreateBrandedWallpaper(base::Value* data) {
       ConvertUTF8ToJavaString(env, *theme_name), is_sponsored,
       ConvertUTF8ToJavaString(
           env, creative_instance_id ? *creative_instance_id : ""),
-      ConvertUTF8ToJavaString(env, wallpaper_id));
+      ConvertUTF8ToJavaString(env, wallpaper_id ? *wallpaper_id : ""));
 }
 
 void NTPBackgroundImagesBridge::GetTopSites(

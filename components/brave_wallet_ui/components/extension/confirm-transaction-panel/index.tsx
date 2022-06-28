@@ -13,7 +13,9 @@ import { getLocale } from '../../../../common/locale'
 import { usePendingTransactions } from '../../../common/hooks/use-pending-transaction'
 
 // Components
-import { CreateSiteOrigin, Tooltip } from '../../shared'
+import CreateSiteOrigin from '../../shared/create-site-origin/index'
+import Tooltip from '../../shared/tooltip/index'
+import withPlaceholderIcon from '../../shared/create-placeholder-icon'
 
 // Components
 import { NavButton, PanelTab, TransactionDetailBox } from '../'
@@ -47,7 +49,11 @@ import {
   QueueStepRow,
   QueueStepButton,
   ErrorText,
-  WarningIcon
+  WarningIcon,
+  ConfirmingButton,
+  LoadIcon,
+  ConfirmingButtonText,
+  AssetIcon
 } from './style'
 import { Skeleton } from '../../shared/loading-skeleton/styles'
 
@@ -72,6 +78,8 @@ export interface Props {
   onReject: () => void
 }
 
+const AssetIconWithPlaceholder = withPlaceholderIcon(AssetIcon, { size: 'big', marginLeft: 0, marginRight: 0 })
+
 function ConfirmTransactionPanel ({
   onConfirm,
   onReject
@@ -87,7 +95,6 @@ function ConfirmTransactionPanel ({
 
   // custom hooks
   const {
-    AssetIconWithPlaceholder,
     baseFeePerGas,
     findAssetPrice,
     foundTokenInfoByContractAddress,
@@ -99,6 +106,7 @@ function ConfirmTransactionPanel ({
     isERC721SafeTransferFrom,
     isERC721TransferFrom,
     isSolanaTransaction,
+    isFilecoinTransaction,
     isAssociatedTokenAccountCreation,
     onEditAllowanceSave,
     queueNextTransaction,
@@ -121,8 +129,30 @@ function ConfirmTransactionPanel ({
   const [isEditingAllowance, setIsEditingAllowance] = React.useState<boolean>(false)
   const [showAdvancedTransactionSettings, setShowAdvancedTransactionSettings] = React.useState<boolean>(false)
   const [maxPriorityPanel, setMaxPriorityPanel] = React.useState<MaxPriorityPanels>(MaxPriorityPanels.setSuggested)
+  const [transactionConfirmed, setTranactionConfirmed] = React.useState<boolean>(false)
+  const [queueLength, setQueueLength] = React.useState<number | undefined>(undefined)
+
+  React.useEffect(() => {
+    // This will update the transactionConfirmed state back to false
+    // if there are more than 1 transactions in the queue.
+    if (queueLength !== transactionsQueueLength || queueLength === undefined) {
+      setTranactionConfirmed(false)
+    }
+  }, [queueLength, transactionsQueueLength])
 
   // methods
+  const onClickConfirmTransaction = React.useCallback(() => {
+    // Checks to see if there are multiple transactions in the queue,
+    // if there is we keep track of the length of the last confirmed transaction.
+    if (transactionsQueueLength > 1) {
+      setQueueLength(transactionsQueueLength)
+    }
+    // Sets transactionConfirmed state to disable the send button to prevent
+    // being clicked again and submitting the same transaction.
+    setTranactionConfirmed(true)
+    onConfirm()
+  }, [transactionsQueueLength, onConfirm])
+
   const onSelectTab = (tab: confirmPanelTabs) => () => setSelectedTab(tab)
 
   const onToggleEditGas = () => setIsEditing(!isEditing)
@@ -173,8 +203,8 @@ function ConfirmTransactionPanel ({
         onSave={onEditAllowanceSave}
         proposedAllowance={transactionDetails.valueExact}
         symbol={transactionDetails.symbol}
-        decimals={transactionDetails.decimals}
         approvalTarget={transactionDetails.approvalTargetLabel || ''}
+        isApprovalUnlimited={transactionDetails.isApprovalUnlimited || false}
       />
     )
   }
@@ -336,7 +366,7 @@ function ConfirmTransactionPanel ({
           onSubmit={onSelectTab('details')}
           text='Details'
         />
-        {!isSolanaTransaction &&
+        {!isSolanaTransaction && !isFilecoinTransaction &&
           <AdvancedTransactionSettingsButton
             onSubmit={onToggleAdvancedTransactionSettings}
           />
@@ -377,13 +407,24 @@ function ConfirmTransactionPanel ({
           buttonType='reject'
           text={getLocale('braveWalletAllowSpendRejectButton')}
           onSubmit={onReject}
+          disabled={transactionConfirmed}
         />
-        <NavButton
-          buttonType='confirm'
-          text={getLocale('braveWalletAllowSpendConfirmButton')}
-          onSubmit={onConfirm}
-          disabled={isConfirmButtonDisabled}
-        />
+        {transactionConfirmed ? (
+          <ConfirmingButton>
+            <ConfirmingButtonText>
+              {getLocale('braveWalletAllowSpendConfirmButton')}
+            </ConfirmingButtonText>
+            <LoadIcon />
+          </ConfirmingButton>
+        ) : (
+          <NavButton
+            buttonType='confirm'
+            text={getLocale('braveWalletAllowSpendConfirmButton')}
+            onSubmit={onClickConfirmTransaction}
+            disabled={isConfirmButtonDisabled}
+          />
+        )}
+
       </ButtonRow>
     </StyledWrapper>
   )

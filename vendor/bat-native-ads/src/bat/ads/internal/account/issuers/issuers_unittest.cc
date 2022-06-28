@@ -29,7 +29,7 @@ class BatAdsIssuersTest : public UnitTestBase {
       : issuers_(std::make_unique<Issuers>()),
         issuers_delegate_mock_(
             std::make_unique<NiceMock<IssuersDelegateMock>>()) {
-    issuers_->set_delegate(issuers_delegate_mock_.get());
+    issuers_->SetDelegate(issuers_delegate_mock_.get());
   }
 
   ~BatAdsIssuersTest() override = default;
@@ -146,7 +146,7 @@ TEST_F(BatAdsIssuersTest, FetchIssuersHttpUpgradeRequiredResponse) {
   // Arrange
   const URLEndpoints& endpoints = {{// Issuers request
                                     R"(/v1/issuers/)",
-                                    {{net::HTTP_UPGRADE_REQUIRED, ""}}}};
+                                    {{net::kHttpUpgradeRequired, ""}}}};
   MockUrlRequest(ads_client_mock_, endpoints);
 
   EXPECT_CALL(*issuers_delegate_mock_, OnDidFetchIssuers(_)).Times(0);

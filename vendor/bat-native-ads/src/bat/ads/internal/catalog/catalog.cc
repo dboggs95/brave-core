@@ -10,7 +10,7 @@
 #include <string>
 #include <utility>
 
-#include "base/check.h"
+#include "base/check_op.h"
 #include "base/time/time.h"
 #include "bat/ads/ads.h"
 #include "bat/ads/internal/ads_client_helper.h"
@@ -19,6 +19,7 @@
 #include "bat/ads/internal/base/time/time_formatting_util.h"
 #include "bat/ads/internal/base/url/url_request_string_util.h"
 #include "bat/ads/internal/base/url/url_response_string_util.h"
+#include "bat/ads/internal/browser/browser_manager.h"
 #include "bat/ads/internal/catalog/catalog_constants.h"
 #include "bat/ads/internal/catalog/catalog_info.h"
 #include "bat/ads/internal/catalog/catalog_json_reader.h"
@@ -37,11 +38,13 @@ constexpr base::TimeDelta kDebugCatalogPing = base::Minutes(15);
 }  // namespace
 
 Catalog::Catalog() {
-  DatabaseManager::Get()->AddObserver(this);
+  BrowserManager::GetInstance()->AddObserver(this);
+  DatabaseManager::GetInstance()->AddObserver(this);
 }
 
 Catalog::~Catalog() {
-  DatabaseManager::Get()->RemoveObserver(this);
+  BrowserManager::GetInstance()->RemoveObserver(this);
+  DatabaseManager::GetInstance()->RemoveObserver(this);
 }
 
 void Catalog::AddObserver(CatalogObserver* observer) {
@@ -79,7 +82,7 @@ void Catalog::Fetch() {
 
   const auto callback =
       std::bind(&Catalog::OnFetch, this, std::placeholders::_1);
-  AdsClientHelper::Get()->UrlRequest(std::move(url_request), callback);
+  AdsClientHelper::GetInstance()->UrlRequest(std::move(url_request), callback);
 }
 
 void Catalog::OnFetch(const mojom::UrlResponse& url_response) {
@@ -94,7 +97,7 @@ void Catalog::OnFetch(const mojom::UrlResponse& url_response) {
     BLOG(1, "Catalog is up to date");
     FetchAfterDelay();
     return;
-  } else if (url_response.status_code == net::HTTP_UPGRADE_REQUIRED) {
+  } else if (url_response.status_code == net::kHttpUpgradeRequired) {
     BLOG(1, "Failed to fetch catalog as a browser upgrade is required");
     NotifyFailedToUpdateCatalog();
     return;
@@ -144,16 +147,16 @@ void Catalog::FetchAfterDelay() {
       g_is_debug ? kDebugCatalogPing : GetCatalogPing();
 
   const base::Time fetch_at = timer_.StartWithPrivacy(
-      delay, base::BindOnce(&Catalog::Fetch, base::Unretained(this)),
-      FROM_HERE);
+      FROM_HERE, delay,
+      base::BindOnce(&Catalog::Fetch, base::Unretained(this)));
 
   BLOG(1, "Fetch catalog " << FriendlyDateAndTime(fetch_at));
 }
 
 void Catalog::Retry() {
   const base::Time retry_at = retry_timer_.StartWithPrivacy(
-      kRetryAfter, base::BindOnce(&Catalog::OnRetry, base::Unretained(this)),
-      FROM_HERE);
+      FROM_HERE, kRetryAfter,
+      base::BindOnce(&Catalog::OnRetry, base::Unretained(this)));
 
   BLOG(1, "Retry fetching catalog " << FriendlyDateAndTime(retry_at));
 }
@@ -176,8 +179,16 @@ void Catalog::NotifyFailedToUpdateCatalog() const {
   }
 }
 
+void Catalog::OnBrowserDidEnterForeground() {
+  if (HasCatalogExpired()) {
+    MaybeFetch();
+  }
+}
+
 void Catalog::OnDidMigrateDatabase(const int from_version,
                                    const int to_version) {
+  DCHECK_NE(from_version, to_version);
+
   ResetCatalog();
 }
 

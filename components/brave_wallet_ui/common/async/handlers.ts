@@ -112,9 +112,6 @@ async function updateAccountInfo (store: Store) {
 }
 
 async function updateCoinAccountNetworkInfo (store: Store, coin: BraveWallet.CoinType) {
-  if (coin === BraveWallet.CoinType.FIL) {
-    await store.dispatch(refreshKeyringInfo())
-  }
   const { accounts, networkList } = getWalletState(store)
   if (accounts.length === 0) {
     return
@@ -317,7 +314,10 @@ handler.on(WalletActions.selectPortfolioTimeline.getType(), async (store: Store,
   await store.dispatch(refreshTokenPriceHistory(payload))
 })
 
-handler.on(WalletActions.sendTransaction.getType(), async (store: Store, payload: SendEthTransactionParams | SendFilTransactionParams | SendSolTransactionParams) => {
+handler.on(WalletActions.sendTransaction.getType(), async (
+  store: Store,
+  payload: SendEthTransactionParams | SendFilTransactionParams | SendSolTransactionParams
+) => {
   let addResult
   if (payload.coin === BraveWallet.CoinType.ETH) {
     addResult = await sendEthTransaction(store, payload as SendEthTransactionParams)
@@ -452,6 +452,7 @@ handler.on(WalletActions.refreshGasEstimates.getType(), async (store: Store, txI
   const { ethTxManagerProxy, solanaTxManagerProxy } = getAPIProxy()
 
   if (
+    txInfo.txType === BraveWallet.TransactionType.SolanaDappSignAndSendTransaction ||
     txInfo.txType === BraveWallet.TransactionType.SolanaSystemTransfer ||
     txInfo.txType === BraveWallet.TransactionType.SolanaSPLTokenTransfer ||
     txInfo.txType === BraveWallet.TransactionType.SolanaSPLTokenTransferWithAssociatedTokenAccountCreation

@@ -27,6 +27,7 @@ import com.wireguard.crypto.KeyPair;
 import org.chromium.base.Log;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.InternetConnection;
+import org.chromium.chrome.browser.customtabs.CustomTabActivity;
 import org.chromium.chrome.browser.settings.BravePreferenceFragment;
 import org.chromium.chrome.browser.vpn.BraveVpnNativeWorker;
 import org.chromium.chrome.browser.vpn.BraveVpnObserver;
@@ -133,9 +134,7 @@ public class BraveVpnPreferences extends BravePreferenceFragment implements Brav
                 .setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
                     @Override
                     public boolean onPreferenceClick(Preference preference) {
-                        Intent browserIntent =
-                                new Intent(Intent.ACTION_VIEW, Uri.parse(VPN_SUPPORT_PAGE));
-                        getActivity().startActivity(browserIntent);
+                        CustomTabActivity.showInfoPage(getActivity(), VPN_SUPPORT_PAGE);
                         return true;
                     }
                 });
@@ -226,11 +225,15 @@ public class BraveVpnPreferences extends BravePreferenceFragment implements Brav
         updateSummary(PREF_SERVER_CHANGE_LOCATION, serverLocation);
         updateSummary(PREF_SERVER_HOST, BraveVpnPrefUtils.getHostnameDisplay());
         if (!BraveVpnPrefUtils.getProductId().isEmpty()) {
-            updateSummary(PREF_SUBSCRIPTION_STATUS,
-                    BraveVpnPrefUtils.getProductId().equals(
-                            InAppPurchaseWrapper.NIGHTLY_MONTHLY_SUBSCRIPTION)
+            String subscriptionStatus = String.format(
+                    InAppPurchaseWrapper.getInstance().isMonthlySubscription(
+                            BraveVpnPrefUtils.getProductId())
                             ? getActivity().getResources().getString(R.string.monthly_subscription)
-                            : getActivity().getResources().getString(R.string.yearly_subscription));
+                            : getActivity().getResources().getString(R.string.yearly_subscription),
+                    (BraveVpnPrefUtils.isTrialSubscription()
+                                    ? getActivity().getResources().getString(R.string.trial)
+                                    : ""));
+            updateSummary(PREF_SUBSCRIPTION_STATUS, subscriptionStatus);
         }
 
         if (BraveVpnPrefUtils.getPurchaseExpiry() > 0) {
@@ -321,20 +324,25 @@ public class BraveVpnPreferences extends BravePreferenceFragment implements Brav
     public void onVerifyPurchaseToken(String jsonResponse, boolean isSuccess) {
         if (isSuccess && mBraveVpnPrefModel != null) {
             Long purchaseExpiry = BraveVpnUtils.getPurchaseExpiryDate(jsonResponse);
+            int paymentState = BraveVpnUtils.getPaymentState(jsonResponse);
             if (purchaseExpiry > 0 && purchaseExpiry >= System.currentTimeMillis()) {
                 BraveVpnPrefUtils.setPurchaseToken(mBraveVpnPrefModel.getPurchaseToken());
                 BraveVpnPrefUtils.setProductId(mBraveVpnPrefModel.getProductId());
                 BraveVpnPrefUtils.setPurchaseExpiry(purchaseExpiry);
                 BraveVpnPrefUtils.setSubscriptionPurchase(true);
-
+                BraveVpnPrefUtils.setPaymentState(paymentState);
                 if (mSubscriptionStatus != null) {
-                    mSubscriptionStatus.setSummary(
-                            mBraveVpnPrefModel.getProductId().equals(
-                                    InAppPurchaseWrapper.NIGHTLY_MONTHLY_SUBSCRIPTION)
+                    String subscriptionStatus = String.format(
+                            InAppPurchaseWrapper.getInstance().isMonthlySubscription(
+                                    BraveVpnPrefUtils.getProductId())
                                     ? getActivity().getResources().getString(
                                             R.string.monthly_subscription)
                                     : getActivity().getResources().getString(
-                                            R.string.yearly_subscription));
+                                            R.string.yearly_subscription),
+                            (BraveVpnPrefUtils.isTrialSubscription()
+                                            ? getActivity().getResources().getString(R.string.trial)
+                                            : ""));
+                    mSubscriptionStatus.setSummary(subscriptionStatus);
                 }
 
                 if (mSubscriptionExpires != null) {

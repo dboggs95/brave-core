@@ -767,13 +767,17 @@ public class Utils {
     }
 
     public static String stripAccountAddress(String address) {
-        String newAddress = "";
+        return address;
+        // TODO(serg): Let's leave it for now as it could be we still
+        // want to show a short address
+        // String newAddress = "";
 
-        if (address.length() > 6) {
-            newAddress = address.substring(0, 6) + "***" + address.substring(address.length() - 5);
-        }
+        // if (address.length() > 6) {
+        //     newAddress = address.substring(0, 6) + "***" + address.substring(address.length() -
+        //     5);
+        // }
 
-        return newAddress;
+        // return newAddress;
     }
 
     public static boolean isJSONValid(String text) {
@@ -1595,8 +1599,24 @@ public class Utils {
         }
     }
 
+    public static String geteTLDHTMLFormatted(String etldPlusOne) {
+        GURL url = getCurentTabUrl();
+
+        return Utils.geteTLDHTMLFormatted(url, etldPlusOne);
+    }
+
     public static Spanned geteTLD(String etldPlusOne) {
         GURL url = getCurentTabUrl();
+
+        return Utils.geteTLD(url, etldPlusOne);
+    }
+
+    public static Spanned geteTLD(GURL url, String etldPlusOne) {
+        String formattedeTLD = geteTLDHTMLFormatted(url, etldPlusOne);
+        return AndroidUtils.formateHTML(formattedeTLD);
+    }
+
+    private static String geteTLDHTMLFormatted(GURL url, String etldPlusOne) {
         StringBuilder builder = new StringBuilder();
         builder.append(url.getScheme()).append("://").append(url.getHost());
         int index = builder.indexOf(etldPlusOne);
@@ -1604,11 +1624,7 @@ public class Utils {
             builder.insert(index, "<b>");
             builder.insert(builder.length(), "</b>");
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            return Html.fromHtml(builder.toString(), Html.FROM_HTML_MODE_LEGACY);
-        } else {
-            return Html.fromHtml(builder.toString());
-        }
+        return builder.toString();
     }
 
     public static GURL getCurentTabUrl() {

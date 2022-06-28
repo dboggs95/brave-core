@@ -9,8 +9,10 @@
 #include <utility>
 
 #include "base/base64.h"
+#include "base/base_switches.h"
 #include "base/bind.h"
 #include "base/containers/flat_map.h"
+#include "base/containers/flat_set.h"
 #include "base/cxx17_backports.h"
 #include "base/debug/dump_without_crashing.h"
 #include "base/feature_list.h"
@@ -27,7 +29,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/task/post_task.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/task/task_runner_util.h"
 #include "base/task/thread_pool.h"
@@ -684,11 +685,25 @@ void AdsServiceImpl::OnInitialize(const bool success) {
 
   StartCheckIdleStateTimer();
 
-  if (!deprecated_data_files_removed_) {
-    deprecated_data_files_removed_ = true;
-    file_task_runner_->PostTask(
-        FROM_HERE, base::BindOnce(&RemoveDeprecatedAdsDataFiles, base_path_));
+  if (!is_setup_on_first_initialize_done_) {
+    SetupOnFirstInitialize();
+    is_setup_on_first_initialize_done_ = true;
   }
+}
+
+void AdsServiceImpl::SetupOnFirstInitialize() {
+  DCHECK(!is_setup_on_first_initialize_done_);
+
+  file_task_runner_->PostTask(
+      FROM_HERE, base::BindOnce(&RemoveDeprecatedAdsDataFiles, base_path_));
+
+  // Initiate prefetching of the new tab page ad. Also need to purge orphaned
+  // new tab page ad events which may have remained from the previous browser
+  // startup.
+  PurgeOrphanedAdEventsForType(
+      ads::mojom::AdType::kNewTabPageAd,
+      base::BindOnce(&AdsServiceImpl::OnPurgeOrphanedAdEventsForNewTabPageAds,
+                     AsWeakPtr()));
 }
 
 void AdsServiceImpl::ShutdownBatAds() {
@@ -840,7 +855,54 @@ void AdsServiceImpl::DetectUncertainFuture(const uint32_t number_of_start) {
 void AdsServiceImpl::OnDetectUncertainFuture(const uint32_t number_of_start,
                                              const bool is_uncertain_future) {
   ads::mojom::SysInfoPtr sys_info = ads::mojom::SysInfo::New();
+
+  // TODO(https://github.com/brave/brave-browser/issues/13793): Transition ads
+  // to components which will then provide access to |kFeatureName| and
+  // command-line switches rather than using hard coded strings below.
+
+  const auto* command_line = base::CommandLine::ForCurrentProcess();
+  if ((command_line->HasSwitch("variations-server-url") &&
+       !command_line->GetSwitchValueASCII("variations-server-url").empty()) ||
+      (command_line->HasSwitch("variations-insecure-server-url") &&
+       !command_line->GetSwitchValueASCII("variations-insecure-server-url")
+            .empty()) ||
+      (command_line->HasSwitch("fake-variations-channel") &&
+       !command_line->GetSwitchValueASCII("fake-variations-channel").empty()) ||
+      (command_line->HasSwitch("variations-override-country") &&
+       !command_line->GetSwitchValueASCII("variations-override-country")
+            .empty())) {
+    sys_info->did_override_command_line_args_flag = true;
+  } else {
+    const base::flat_set<std::string> kCommandLineSwitches = {
+        switches::kEnableFeatures, switches::kFieldTrialHandle,
+        "force-fieldtrial-params"};
+
+    std::string concatenated_command_line_switches;
+    for (const auto& command_line_switch : kCommandLineSwitches) {
+      if (command_line->HasSwitch(command_line_switch)) {
+        concatenated_command_line_switches +=
+            command_line->GetSwitchValueASCII(command_line_switch);
+      }
+    }
+
+    constexpr const char* kFeatureNames[] = {
+        "AdRewards",        "AdServing",        "AntiTargeting",
+        "Conversions",      "EligibleAds",      "EpsilonGreedyBandit",
+        "FrequencyCapping", "InlineContentAds", "NewTabPageAds",
+        "PermissionRules",  "PurchaseIntent",   "TextClassification",
+        "UserActivity"};
+
+    for (const char* feature_name : kFeatureNames) {
+      if (concatenated_command_line_switches.find(feature_name) !=
+          std::string::npos) {
+        sys_info->did_override_command_line_args_flag = true;
+        break;
+      }
+    }
+  }
+
   sys_info->is_uncertain_future = is_uncertain_future;
+
   bat_ads_service_->SetSysInfo(std::move(sys_info), base::NullCallback());
 
   EnsureBaseDirectoryExists(number_of_start);
@@ -1137,6 +1199,15 @@ void AdsServiceImpl::TriggerNewTabPageAdEvent(
                                      event_type);
 }
 
+void AdsServiceImpl::OnFailedToServeNewTabPageAd(
+    const std::string& placement_id,
+    const std::string& creative_instance_id) {
+  if (!purge_orphaned_new_tab_page_ad_events_time_) {
+    purge_orphaned_new_tab_page_ad_events_time_ =
+        base::Time::Now() + base::Hours(1);
+  }
+}
+
 void AdsServiceImpl::TriggerPromotedContentAdEvent(
     const std::string& placement_id,
     const std::string& creative_instance_id,
@@ -1189,13 +1260,40 @@ void AdsServiceImpl::TriggerSearchResultAdEvent(
                      std::move(callback)));
 }
 
+absl::optional<ads::NewTabPageAdInfo>
+AdsServiceImpl::GetPrefetchedNewTabPageAd() {
+  if (!connected()) {
+    return absl::nullopt;
+  }
+
+  absl::optional<ads::NewTabPageAdInfo> ad_info;
+  if (prefetched_new_tab_page_ad_info_) {
+    ad_info = prefetched_new_tab_page_ad_info_;
+    prefetched_new_tab_page_ad_info_.reset();
+  }
+
+  if (purge_orphaned_new_tab_page_ad_events_time_ &&
+      *purge_orphaned_new_tab_page_ad_events_time_ <= base::Time::Now()) {
+    purge_orphaned_new_tab_page_ad_events_time_.reset();
+    PurgeOrphanedAdEventsForType(
+        ads::mojom::AdType::kNewTabPageAd,
+        base::BindOnce(&AdsServiceImpl::OnPurgeOrphanedAdEventsForNewTabPageAds,
+                       AsWeakPtr()));
+  } else {
+    PrefetchNewTabPageAd();
+  }
+
+  return ad_info;
+}
+
 void AdsServiceImpl::PurgeOrphanedAdEventsForType(
-    const ads::mojom::AdType ad_type) {
+    const ads::mojom::AdType ad_type,
+    PurgeOrphanedAdEventsForTypeCallback callback) {
   if (!connected()) {
     return;
   }
 
-  bat_ads_->PurgeOrphanedAdEventsForType(ad_type);
+  bat_ads_->PurgeOrphanedAdEventsForType(ad_type, std::move(callback));
 }
 
 void AdsServiceImpl::RetryOpeningNewTabWithAd(const std::string& placement_id) {
@@ -1246,6 +1344,40 @@ void AdsServiceImpl::RegisterResourceComponentsForLocale(
     const std::string& locale) {
   g_brave_browser_process->resource_component()->RegisterComponentsForLocale(
       locale);
+}
+
+void AdsServiceImpl::PrefetchNewTabPageAd() {
+  if (!connected()) {
+    return;
+  }
+
+  // The previous prefetched new tab page ad is available. No need to do
+  // prefetch again.
+  if (prefetched_new_tab_page_ad_info_) {
+    return;
+  }
+
+  bat_ads_->GetNewTabPageAd(
+      base::BindOnce(&AdsServiceImpl::OnPrefetchNewTabPageAd, AsWeakPtr()));
+}
+
+void AdsServiceImpl::OnPrefetchNewTabPageAd(bool success,
+                                            const std::string& json) {
+  // The previous prefetched new tab page ad was not served.
+  if (prefetched_new_tab_page_ad_info_ &&
+      !purge_orphaned_new_tab_page_ad_events_time_) {
+    purge_orphaned_new_tab_page_ad_events_time_ =
+        base::Time::Now() + base::Hours(1);
+  }
+
+  if (!success) {
+    prefetched_new_tab_page_ad_info_.reset();
+    return;
+  }
+
+  ads::NewTabPageAdInfo ad_info;
+  ad_info.FromJson(json);
+  prefetched_new_tab_page_ad_info_ = ad_info;
 }
 
 void AdsServiceImpl::OnURLRequestStarted(
@@ -1330,6 +1462,16 @@ void AdsServiceImpl::OnTriggerSearchResultAdEvent(
     const std::string& placement_id,
     const ads::mojom::SearchResultAdEventType event_type) {
   std::move(callback).Run(success, placement_id, event_type);
+}
+
+void AdsServiceImpl::OnPurgeOrphanedAdEventsForNewTabPageAds(
+    const bool success) {
+  if (!success) {
+    VLOG(0) << "Failed to purge orphaned ad events for new tab page ads";
+    return;
+  }
+
+  PrefetchNewTabPageAd();
 }
 
 void AdsServiceImpl::OnGetHistory(OnGetHistoryCallback callback,
@@ -2112,24 +2254,25 @@ void AdsServiceImpl::Load(const std::string& name, ads::LoadCallback callback) {
 void AdsServiceImpl::LoadFileResource(const std::string& id,
                                       const int version,
                                       ads::LoadFileCallback callback) {
-  const absl::optional<base::FilePath> path =
+  const absl::optional<base::FilePath> file_path_optional =
       g_brave_browser_process->resource_component()->GetPath(id, version);
-
-  if (!path) {
+  if (!file_path_optional) {
     std::move(callback).Run(base::File());
     return;
   }
+  const base::FilePath& file_path = file_path_optional.value();
 
-  VLOG(1) << "Getting descriptor to ads resource from " << path.value();
+  VLOG(1) << "Loading file resource from " << file_path << " for component id "
+          << id;
 
   base::PostTaskAndReplyWithResult(
       file_task_runner_.get(), FROM_HERE,
       base::BindOnce(
-          [](const base::FilePath& path) {
-            return base::File(path, base::File::Flags::FLAG_OPEN |
-                                        base::File::Flags::FLAG_READ);
+          [](const base::FilePath& file_path) {
+            return base::File(file_path, base::File::Flags::FLAG_OPEN |
+                                             base::File::Flags::FLAG_READ);
           },
-          path.value()),
+          file_path),
       base::BindOnce(&AdsServiceImpl::OnFileLoaded, AsWeakPtr(),
                      std::move(callback)));
 }

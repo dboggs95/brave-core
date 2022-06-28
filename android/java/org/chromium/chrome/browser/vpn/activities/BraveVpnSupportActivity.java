@@ -19,9 +19,11 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.LinearLayout;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 
 import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.widget.AppCompatRadioButton;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.appcompat.widget.Toolbar;
 
@@ -55,81 +57,80 @@ public class BraveVpnSupportActivity extends AsyncInitializationActivity {
         SwitchCompat networkTypeSwitch = findViewById(R.id.network_type_switch);
         SwitchCompat cellularCarrierSwitch = findViewById(R.id.cellular_carrier_switch);
 
-        LinearLayout otherIssuesLayout = findViewById(R.id.other_issues_layout);
-
-        CheckBox otherIssueCheckbox1 = findViewById(R.id.other_issue_checkbox_1);
-        CheckBox otherIssueCheckbox2 = findViewById(R.id.other_issue_checkbox_2);
-        CheckBox otherIssueCheckbox3 = findViewById(R.id.other_issue_checkbox_3);
-        CheckBox otherIssueCheckbox4 = findViewById(R.id.other_issue_checkbox_4);
-        CheckBox otherIssueCheckbox5 = findViewById(R.id.other_issue_checkbox_5);
+        RadioGroup otherIssuesRadioGroup = findViewById(R.id.other_issues_radiogroup);
 
         TextView otherIssuesText = findViewById(R.id.other_issues_text);
         otherIssuesText.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (otherIssuesLayout.isShown()) {
+                if (otherIssuesRadioGroup.isShown()) {
                     otherIssuesText.setCompoundDrawablesWithIntrinsicBounds(
                             0, 0, R.drawable.ic_toggle_down, 0);
-                    otherIssuesLayout.setVisibility(View.GONE);
+                    otherIssuesRadioGroup.setVisibility(View.GONE);
                 } else {
                     otherIssuesText.setCompoundDrawablesWithIntrinsicBounds(
                             0, 0, R.drawable.ic_toggle_up, 0);
-                    otherIssuesLayout.setVisibility(View.VISIBLE);
+                    otherIssuesRadioGroup.setVisibility(View.VISIBLE);
                 }
             }
         });
 
         Button btnContinueToEmail = findViewById(R.id.btn_continue_to_email);
+        otherIssuesRadioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                if (!btnContinueToEmail.isEnabled()) {
+                    btnContinueToEmail.setEnabled(true);
+                    btnContinueToEmail.setBackgroundResource(R.drawable.orange_rounded_button);
+                }
+            }
+        });
+
         btnContinueToEmail.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                StringBuilder bodyText = new StringBuilder(
-                        "\n\n\n\n\n#### Please do not edit any information below ####\n");
+                StringBuilder bodyText =
+                        new StringBuilder(getResources().getString(R.string.support_email_text));
                 if (vpnHostnameSwitch.isChecked()) {
-                    bodyText.append("\n\nVPN Hostname\n" + BraveVpnPrefUtils.getHostname());
+                    bodyText.append(String.format(getResources().getString(R.string.vpn_host_text),
+                            BraveVpnPrefUtils.getHostname()));
                 }
                 if (subscriptionTypeSwitch.isChecked()) {
-                    bodyText.append("\n\nSubscription Type\n" + BraveVpnPrefUtils.getProductId());
+                    bodyText.append(
+                            String.format(getResources().getString(R.string.subscription_type_text),
+                                    BraveVpnPrefUtils.getProductId()));
                 }
                 if (appReceiptSwitch.isChecked()) {
                     bodyText.append(
-                            "\n\nPlay store token\n" + BraveVpnPrefUtils.getPurchaseToken());
+                            String.format(getResources().getString(R.string.playstore_token_text),
+                                    BraveVpnPrefUtils.getPurchaseToken()));
                 }
                 if (appVersionSwitch.isChecked()) {
-                    bodyText.append("\n\nApp Version\n"
-                            + AboutChromeSettings.getApplicationVersion(
-                                    BraveVpnSupportActivity.this,
-                                    AboutSettingsBridge.getApplicationVersion()));
+                    bodyText.append(String.format(
+                            getResources().getString(R.string.app_version_text),
+                            AboutChromeSettings.getApplicationVersion(BraveVpnSupportActivity.this,
+                                    AboutSettingsBridge.getApplicationVersion())));
                 }
                 if (timezoneSwitch.isChecked()) {
-                    bodyText.append("\n\nTimezone\n").append(TimeZone.getDefault().getID());
+                    bodyText.append(getResources().getString(R.string.timezone_text))
+                            .append(TimeZone.getDefault().getID());
                 }
                 if (networkTypeSwitch.isChecked()) {
-                    bodyText.append("\n\nNetwork Type\n").append(getNetworkType());
+                    bodyText.append(getResources().getString(R.string.network_type_text))
+                            .append(getNetworkType());
                 }
                 if (cellularCarrierSwitch.isChecked()) {
-                    bodyText.append("\n\nCellular Carrier\n").append(getCellularCarrier());
+                    bodyText.append(getResources().getString(R.string.cellular_carrier_text))
+                            .append(getCellularCarrier());
                 }
 
-                bodyText.append("\n\nOther Issue\n");
-                if (otherIssueCheckbox1.isChecked()) {
-                    bodyText.append(otherIssueCheckbox1.getText() + "\n");
-                }
-                if (otherIssueCheckbox2.isChecked()) {
-                    bodyText.append(otherIssueCheckbox2.getText() + "\n");
-                }
-                if (otherIssueCheckbox3.isChecked()) {
-                    bodyText.append(otherIssueCheckbox3.getText() + "\n");
-                }
-                if (otherIssueCheckbox4.isChecked()) {
-                    bodyText.append(otherIssueCheckbox4.getText() + "\n");
-                }
-                if (otherIssueCheckbox5.isChecked()) {
-                    bodyText.append(otherIssueCheckbox5.getText() + "\n");
-                }
-                bodyText.append("\n\nPlatform\n")
-                        .append("Android"
-                                + "\n");
+                bodyText.append(getResources().getString(R.string.other_issue_text));
+                AppCompatRadioButton checkedRadioButton =
+                        findViewById(otherIssuesRadioGroup.getCheckedRadioButtonId());
+                bodyText.append(checkedRadioButton.getText()).append("\n");
+                bodyText.append(getResources().getString(R.string.platform_text))
+                        .append("Android")
+                        .append("\n");
 
                 composeEmail(bodyText.toString());
             }

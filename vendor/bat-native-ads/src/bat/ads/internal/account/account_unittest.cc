@@ -48,14 +48,24 @@ constexpr char kInvalidWalletSeed[] =
 
 class BatAdsAccountTest : public AccountObserver, public UnitTestBase {
  protected:
-  BatAdsAccountTest()
-      : token_generator_mock_(
-            std::make_unique<NiceMock<privacy::TokenGeneratorMock>>()),
-        account_(std::make_unique<Account>(token_generator_mock_.get())) {
+  BatAdsAccountTest() = default;
+
+  ~BatAdsAccountTest() override = default;
+
+  void SetUp() override {
+    UnitTestBase::SetUp();
+
+    token_generator_mock_ =
+        std::make_unique<NiceMock<privacy::TokenGeneratorMock>>();
+    account_ = std::make_unique<Account>(token_generator_mock_.get());
     account_->AddObserver(this);
   }
 
-  ~BatAdsAccountTest() override = default;
+  void TearDown() override {
+    account_->RemoveObserver(this);
+
+    UnitTestBase::TearDown();
+  }
 
   void Save(const CreativeNotificationAdList& creative_ads) {
     database::table::CreativeNotificationAds database_table;
@@ -159,7 +169,7 @@ TEST_F(BatAdsAccountTest, GetWallet) {
 
 TEST_F(BatAdsAccountTest, GetIssuersIfAdsAreEnabled) {
   // Arrange
-  AdsClientHelper::Get()->SetBooleanPref(prefs::kEnabled, true);
+  AdsClientHelper::GetInstance()->SetBooleanPref(prefs::kEnabled, true);
 
   const URLEndpoints& endpoints = {{// Get issuers request
                                     R"(/v1/issuers/)",
@@ -206,7 +216,7 @@ TEST_F(BatAdsAccountTest, GetIssuersIfAdsAreEnabled) {
         )"}}}};
   MockUrlRequest(ads_client_mock_, endpoints);
 
-  account_->MaybeGetIssuers();
+  account_->Process();
 
   // Act
   const IssuersInfo& issuers = GetIssuers();
@@ -226,7 +236,7 @@ TEST_F(BatAdsAccountTest, GetIssuersIfAdsAreEnabled) {
 
 TEST_F(BatAdsAccountTest, DoNotGetIssuersIfAdsAreDisabled) {
   // Arrange
-  AdsClientHelper::Get()->SetBooleanPref(prefs::kEnabled, false);
+  AdsClientHelper::GetInstance()->SetBooleanPref(prefs::kEnabled, false);
 
   const URLEndpoints& endpoints = {{// Get issuers request
                                     R"(/v1/issuers/)",
@@ -273,7 +283,7 @@ TEST_F(BatAdsAccountTest, DoNotGetIssuersIfAdsAreDisabled) {
         )"}}}};
   MockUrlRequest(ads_client_mock_, endpoints);
 
-  account_->MaybeGetIssuers();
+  account_->Process();
 
   // Act
   const IssuersInfo& issuers = GetIssuers();
@@ -286,7 +296,7 @@ TEST_F(BatAdsAccountTest, DoNotGetIssuersIfAdsAreDisabled) {
 
 TEST_F(BatAdsAccountTest, DoNotGetInvalidIssuers) {
   // Arrange
-  AdsClientHelper::Get()->SetBooleanPref(prefs::kEnabled, true);
+  AdsClientHelper::GetInstance()->SetBooleanPref(prefs::kEnabled, true);
 
   BuildAndSetIssuers();
 
@@ -339,7 +349,7 @@ TEST_F(BatAdsAccountTest, DoNotGetInvalidIssuers) {
         )"}}}};
   MockUrlRequest(ads_client_mock_, endpoints);
 
-  account_->MaybeGetIssuers();
+  account_->Process();
 
   // Act
   const IssuersInfo& issuers = GetIssuers();
@@ -357,7 +367,7 @@ TEST_F(BatAdsAccountTest, DoNotGetInvalidIssuers) {
 
 TEST_F(BatAdsAccountTest, DoNotGetMissingPaymentIssuers) {
   // Arrange
-  AdsClientHelper::Get()->SetBooleanPref(prefs::kEnabled, true);
+  AdsClientHelper::GetInstance()->SetBooleanPref(prefs::kEnabled, true);
 
   BuildAndSetIssuers();
 
@@ -385,7 +395,7 @@ TEST_F(BatAdsAccountTest, DoNotGetMissingPaymentIssuers) {
         )"}}}};
   MockUrlRequest(ads_client_mock_, endpoints);
 
-  account_->MaybeGetIssuers();
+  account_->Process();
 
   // Act
   const IssuersInfo& issuers = GetIssuers();
@@ -403,7 +413,7 @@ TEST_F(BatAdsAccountTest, DoNotGetMissingPaymentIssuers) {
 
 TEST_F(BatAdsAccountTest, DepositForCash) {
   // Arrange
-  AdsClientHelper::Get()->SetBooleanPref(prefs::kEnabled, true);
+  AdsClientHelper::GetInstance()->SetBooleanPref(prefs::kEnabled, true);
 
   const URLEndpoints& endpoints = {
       {// Create confirmation request

@@ -8,7 +8,6 @@
 #include <memory>
 #include <utility>
 
-#include "base/guid.h"
 #include "base/json/json_writer.h"
 #include "base/memory/weak_ptr.h"
 #include "base/metrics/histogram_macros.h"
@@ -18,6 +17,7 @@
 #include "brave/browser/brave_ads/ads_service_factory.h"
 #include "brave/browser/ntp_background_images/view_counter_service_factory.h"
 #include "brave/browser/profiles/profile_util.h"
+#include "brave/browser/search_engines/pref_names.h"
 #include "brave/browser/search_engines/search_engine_provider_util.h"
 #include "brave/browser/ui/webui/new_tab_page/brave_new_tab_ui.h"
 #include "brave/components/brave_perf_predictor/common/pref_names.h"
@@ -30,7 +30,7 @@
 #include "brave/components/ntp_background_images/common/pref_names.h"
 #include "brave/components/p3a/brave_p3a_utils.h"
 #include "brave/components/services/bat_ads/public/interfaces/bat_ads.mojom.h"
-#include "brave/components/weekly_storage/weekly_storage.h"
+#include "brave/components/time_period_storage/weekly_storage.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/first_run/first_run.h"
 #include "chrome/browser/profiles/profile.h"
@@ -52,10 +52,6 @@ using ntp_background_images::prefs::
 
 #if BUILDFLAG(ENABLE_FTX)
 #include "brave/components/ftx/common/pref_names.h"
-#endif
-
-#if BUILDFLAG(ENABLE_TOR)
-#include "brave/components/tor/tor_launcher_factory.h"
 #endif
 
 namespace {
@@ -121,19 +117,11 @@ base::DictionaryValue GetPrivatePropertiesDictionary(PrefService* prefs) {
   base::DictionaryValue private_data;
   private_data.SetBoolean(
       "useAlternativePrivateSearchEngine",
-      prefs->GetBoolean(kUseAlternativeSearchEngineProvider));
+      prefs->GetBoolean(kUseAlternativePrivateSearchEngineProvider));
   private_data.SetBoolean(
       "showAlternativePrivateSearchEngineToggle",
-      prefs->GetBoolean(kShowAlternativeSearchEngineProviderToggle));
+      prefs->GetBoolean(kShowAlternativePrivateSearchEngineProviderToggle));
   return private_data;
-}
-
-base::DictionaryValue GetTorPropertiesDictionary(bool connected,
-                                                 const std::string& progress) {
-  base::DictionaryValue tor_data;
-  tor_data.SetBoolean("torCircuitEstablished", connected);
-  tor_data.SetString("torInitProgress", progress);
-  return tor_data;
 }
 
 // TODO(petemill): Move p3a to own NTP component so it can
@@ -212,17 +200,9 @@ BraveNewTabMessageHandler* BraveNewTabMessageHandler::Create(
 BraveNewTabMessageHandler::BraveNewTabMessageHandler(Profile* profile)
     : profile_(profile), weak_ptr_factory_(this) {
   ads_service_ = brave_ads::AdsServiceFactory::GetForProfile(profile_);
-#if BUILDFLAG(ENABLE_TOR)
-  tor_launcher_factory_ = TorLauncherFactory::GetInstance();
-#endif
 }
 
-BraveNewTabMessageHandler::~BraveNewTabMessageHandler() {
-#if BUILDFLAG(ENABLE_TOR)
-  if (tor_launcher_factory_)
-    tor_launcher_factory_->RemoveObserver(this);
-#endif
-}
+BraveNewTabMessageHandler::~BraveNewTabMessageHandler() = default;
 
 void BraveNewTabMessageHandler::RegisterMessages() {
   // TODO(petemill): This MessageHandler can be split up to
@@ -244,10 +224,6 @@ void BraveNewTabMessageHandler::RegisterMessages() {
       base::BindRepeating(
           &BraveNewTabMessageHandler::HandleGetPrivateProperties,
           base::Unretained(this)));
-  web_ui()->RegisterMessageCallback(
-      "getNewTabPageTorProperties",
-      base::BindRepeating(&BraveNewTabMessageHandler::HandleGetTorProperties,
-                          base::Unretained(this)));
   web_ui()->RegisterMessageCallback(
       "getNewTabAdsData",
       base::BindRepeating(&BraveNewTabMessageHandler::HandleGetNewTabAdsData,
@@ -310,12 +286,7 @@ void BraveNewTabMessageHandler::OnJavascriptAllowed() {
   if (IsPrivateNewTab(profile_)) {
     // Private New Tab Page preferences
     pref_change_registrar_.Add(
-        kUseAlternativeSearchEngineProvider,
-        base::BindRepeating(
-            &BraveNewTabMessageHandler::OnPrivatePropertiesChanged,
-            base::Unretained(this)));
-    pref_change_registrar_.Add(
-        kAlternativeSearchEngineProviderInTor,
+        kUseAlternativePrivateSearchEngineProvider,
         base::BindRepeating(
             &BraveNewTabMessageHandler::OnPrivatePropertiesChanged,
             base::Unretained(this)));
@@ -387,11 +358,6 @@ void BraveNewTabMessageHandler::OnJavascriptAllowed() {
                           base::Unretained(this)));
 #endif
 
-#if BUILDFLAG(ENABLE_TOR)
-  if (tor_launcher_factory_)
-    tor_launcher_factory_->AddObserver(this);
-#endif
-
   if (ads_service_) {
     ads_service_observation_.Reset();
     ads_service_observation_.Observe(ads_service_);
@@ -400,10 +366,6 @@ void BraveNewTabMessageHandler::OnJavascriptAllowed() {
 
 void BraveNewTabMessageHandler::OnJavascriptDisallowed() {
   pref_change_registrar_.RemoveAll();
-#if BUILDFLAG(ENABLE_TOR)
-  if (tor_launcher_factory_)
-    tor_launcher_factory_->RemoveObserver(this);
-#endif
   ads_service_observation_.Reset();
   weak_ptr_factory_.InvalidateWeakPtrs();
 }
@@ -431,19 +393,6 @@ void BraveNewTabMessageHandler::HandleGetPrivateProperties(
   ResolveJavascriptCallback(args[0], data);
 }
 
-void BraveNewTabMessageHandler::HandleGetTorProperties(
-    const base::Value::List& args) {
-  AllowJavascript();
-#if BUILDFLAG(ENABLE_TOR)
-  auto data = GetTorPropertiesDictionary(
-      tor_launcher_factory_ ? tor_launcher_factory_->IsTorConnected() : false,
-      "");
-#else
-  auto data = GetTorPropertiesDictionary(false, "");
-#endif
-  ResolveJavascriptCallback(args[0], data);
-}
-
 void BraveNewTabMessageHandler::HandleGetNewTabAdsData(
     const base::Value::List& args) {
   if (!ads_service_) {
@@ -458,7 +407,11 @@ void BraveNewTabMessageHandler::HandleGetNewTabAdsData(
 
 void BraveNewTabMessageHandler::HandleToggleAlternativeSearchEngineProvider(
     const base::Value::List& args) {
-  brave::ToggleUseAlternativeSearchEngineProvider(profile_);
+  // Alternative search related code will not be used.
+  // Cleanup "toggleAlternativePrivateSearchEngine" message handler when it's
+  // deleted from NTP Webui.
+  // https://github.com/brave/brave-browser/issues/23493
+  NOTREACHED();
 }
 
 void BraveNewTabMessageHandler::HandleSaveNewTabPagePref(
@@ -590,7 +543,7 @@ void BraveNewTabMessageHandler::HandleGetWallpaperData(
     return;
   }
 
-  auto data = service->GetCurrentWallpaperForDisplay();
+  base::Value data = service->GetCurrentWallpaperForDisplay();
 
   if (!data.is_dict()) {
     ResolveJavascriptCallback(args[0], std::move(wallpaper));
@@ -608,11 +561,14 @@ void BraveNewTabMessageHandler::HandleGetWallpaperData(
     return;
   }
 
+  const std::string* creative_instance_id =
+      data.FindStringKey(ntp_background_images::kCreativeInstanceIDKey);
+  const std::string* wallpaper_id =
+      data.FindStringKey(ntp_background_images::kWallpaperIDKey);
+  service->BrandedWallpaperWillBeDisplayed(wallpaper_id, creative_instance_id);
+
   constexpr char kBrandedWallpaperKey[] = "brandedWallpaper";
-  const std::string wallpaper_id = base::GenerateGUID();
-  data.SetStringKey(ntp_background_images::kWallpaperIDKey, wallpaper_id);
   wallpaper.SetKey(kBrandedWallpaperKey, std::move(data));
-  service->BrandedWallpaperWillBeDisplayed(wallpaper_id);
   ResolveJavascriptCallback(args[0], std::move(wallpaper));
 }
 
@@ -653,17 +609,6 @@ base::Value BraveNewTabMessageHandler::GetAdsDataDictionary() const {
   ads_data.Set(kNeedsBrowserUpdateToSeeAds, needs_browser_update_to_see_ads);
 
   return base::Value(std::move(ads_data));
-}
-
-void BraveNewTabMessageHandler::OnTorCircuitEstablished(bool result) {
-  auto data = GetTorPropertiesDictionary(result, "");
-  FireWebUIListener("tor-tab-data-updated", data);
-}
-
-void BraveNewTabMessageHandler::OnTorInitializing(
-    const std::string& percentage) {
-  auto data = GetTorPropertiesDictionary(false, percentage);
-  FireWebUIListener("tor-tab-data-updated", data);
 }
 
 void BraveNewTabMessageHandler::OnNeedsBrowserUpdateToSeeAds() {

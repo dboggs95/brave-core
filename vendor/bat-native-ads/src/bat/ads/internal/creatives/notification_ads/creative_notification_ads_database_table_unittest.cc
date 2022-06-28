@@ -114,7 +114,7 @@ TEST_F(BatAdsCreativeNotificationAdsDatabaseTableTest,
 TEST_F(BatAdsCreativeNotificationAdsDatabaseTableTest,
        SaveCreativeNotificationAdsInBatches) {
   // Arrange
-  database_table_->set_batch_size(2);
+  database_table_->SetBatchSize(2);
 
   CreativeNotificationAdList creative_ads;
 
@@ -578,7 +578,7 @@ TEST_F(BatAdsCreativeNotificationAdsDatabaseTableTest,
   Save(creative_ads);
 
   // Act
-  FastForwardClockBy(base::Hours(1));
+  AdvanceClockBy(base::Hours(1));
 
   // Assert
   CreativeNotificationAdList expected_creative_ads;

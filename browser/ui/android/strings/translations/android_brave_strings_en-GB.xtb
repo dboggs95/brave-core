@@ -30,7 +30,6 @@
 <translation id="3894650624018948468">Resolve Method</translation>
 <translation id="2356070529366658676">Ask</translation>
 <translation id="4176463684765177261">Disabled</translation>
-<translation id="2218918398178303658">DNS over HTTPS</translation>
 <translation id="1448289340149908413">Ethereum</translation>
 <translation id="6252490671914511928">Today’s top stories in a completely private feed, just for you.</translation>
 <translation id="7266075701303521777">Brave News is ad-supported with completely private and anonymised ads matched on your device.</translation>
@@ -85,7 +84,20 @@
 <translation id="6587448235155023666">Your changes will take effect the next time you relaunch Brave</translation>
 <translation id="8701563696941209024">RELAUNCH NOW</translation>
 <translation id="834487290629916192">LATER</translation>
+<translation id="7207456302801184289">Welcome to Brave</translation>
+<translation id="4117451092682672487">Privacy. Made simple.</translation>
+<translation id="7909375417585209817">With Brave as default, every link you tap opens with Brave's privacy protections.</translation>
+<translation id="5148943178722443958">Help make Brave better.</translation>
+<translation id="6188781052835527980">Send anonymous diagnostic reports if you experience a crash or freeze.</translation>
+<translation id="1929905278861178845">Share completely private and anonymous product insights about what features are being used by Brave's users.</translation>
+<translation id="2877653791257935258">Type a website name or URL</translation>
+<translation id="5329830149661250028">See the Brave difference: No ads. No trackers. Way faster page load.</translation>
+<translation id="3545804467215833536">Tap to view Brave Shields</translation>
+<translation id="1724327820822194498">See all the bad stuff Brave blocked, on every page, with Shields.</translation>
+<translation id="5386259141409498372"><ph name="BIG_TECH"/> and <ph name="TRACKER"/> other ads &amp; trackers blocked</translation>
+<translation id="3092683655478890840"><ph name="TRACKER_COUNT"/> ads &amp; trackers blocked</translation>
 <translation id="8281886186245836920">Skip</translation>
+<translation id="6165508094623778733">Learn more</translation>
 <translation id="986879628471635371">Troubleshooting onboarding</translation>
 <translation id="5808759341041733958">Choose default search engine</translation>
 <translation id="1331593888918588693">You can always change your preference later in app settings.</translation>
@@ -113,12 +125,12 @@
 <translation id="1166682575529520472">Monthly</translation>
 <translation id="1628742278973105368">Your first monthly tip will be sent on:</translation>
 <translation id="298349922412901215">NOTE: this creator has not yet signed up to receive contributions from Brave users. We'll keep trying to contribute until they verify, or until 90 days have passed.</translation>
-<translation id="6602036279006002239">NOTE: This creator is currently not configured to receive tips from your wallet. Any tip you make will remain pending in your wallet and retry automatically for 90 days.</translation>
+<translation id="635752162765375187">NOTE: this creator is currently not configured to receive tips from your Rewards custodial wallet service. Any tip you make will remain pending and retry automatically for 90 days.</translation>
 <translation id="1910721550319506122">Welcome!</translation>
 <translation id="3165726837666415756">You can support this site by sending a tip. It's a way of thanking them for making great content. Verified content creators get paid for their tips during the first week of each calendar month.</translation>
 <translation id="1704859330137112950">If you like, you can schedule monthly tips to support this site on a continuous basis.</translation>
 <translation id="245015745140252435">Tip amount</translation>
-<translation id="3370968821559864204">wallet balance:</translation>
+<translation id="7873874596836611687">Rewards balance:</translation>
 <translation id="2573313946367623146">send my tip</translation>
 <translation id="3250511771491660127">Make this monthly</translation>
 <translation id="7658239707568436148">Cancel</translation>
@@ -138,7 +150,7 @@
 <translation id="8220228041552340594">OCTOBER</translation>
 <translation id="8280223431922155812">NOVEMBER</translation>
 <translation id="4254029385847607686">DECEMBER</translation>
-<translation id="3780605330121608425">Your wallet</translation>
+<translation id="4258022280942725182">Your Brave Rewards</translation>
 <translation id="3960619311638643872">Brave VPN</translation>
 <translation id="1772301834467143364">Brave News</translation>
 <translation id="7760215798627399379"><ph name="VALUE"/> USD</translation>
@@ -173,8 +185,8 @@ month ...</translation>
 <translation id="8689997599821157251">You've earned</translation>
 <translation id="7550470870580166294">Insufficient Funds</translation>
 <translation id="2775064702681588061">Your Brave Rewards account is waiting for a deposit.</translation>
-<translation id="765834632354589737">Backup Wallet</translation>
-<translation id="1713542052890184975">Please backup your Brave wallet.</translation>
+<translation id="2630264552940126640">Back up Brave Rewards</translation>
+<translation id="238922425564381955">Please back up your Brave Rewards.</translation>
 <translation id="2323069945529668668">Uh oh!</translation>
 <translation id="7510166204621526816">The Brave Rewards server is not responding. We will fix this as soon as possible.</translation>
 <translation id="683765328936486920">on YouTube</translation>
@@ -192,7 +204,6 @@ until they verify, or until 90 days have passed.</translation>
 <translation id="279635009973773843">LOADING DEVICES ...</translation>
 <translation id="6394333525003604181">LEAVING THE SYNC CHAIN...</translation>
 <translation id="2569646144216067185">Word count: <ph name="WORD_COUNT"/></translation>
-<translation id="4282642752844565114">Incorrect number of words</translation>
 <translation id="7507533586185621084">Wrong sync code</translation>
 <translation id="8284063834901328650">Wrong sync QR code</translation>
 <translation id="859506441384380749">This code was generated by a deprecated version of Brave, please upgrade your other device first</translation>
@@ -285,7 +296,6 @@ Are you sure you want to do this?</translation>
 <translation id="8697510149346635496">Withdraw BAT that you earn from viewing privacy-respecting ads</translation>
 <translation id="1481480653609649134">Purchase additional BAT with credit cards and other sources</translation>
 <translation id="9096003370755878766">Withdraw BAT that you may have previously added to your Brave Rewards wallet</translation>
-<translation id="8267327690882073581">Verify Wallet</translation>
 <translation id="1554282356558968486">Our wallet service is provided by</translation>
 <translation id="6569877533335686968">Uphold</translation>
 <translation id="734105583050813665">Bitflyer</translation>
@@ -355,32 +365,7 @@ Are you sure you want to do this?</translation>
 <translation id="5516010970279932133">Show suggested sites in autocomplete</translation>
 <translation id="5370478469168390143">Save Data Online</translation>
 <translation id="1118508688433541158">Browse faster and block ads with Brave</translation>
-<translation id="6589609065569680305">Trackers &amp; ads blocked on this page.</translation>
-<translation id="1283922192221545319">Brave Shields just protected your privacy.</translation>
-<translation id="3286927551967858325">Take a look</translation>
-<translation id="6227291358910554399">Ads are blocked while watching videos on this website.</translation>
-<translation id="7802980684512102010">Videos without ads use less data.</translation>
-<translation id="2046475855484346614">10+ trackers &amp; ads blocked on this page.</translation>
-<translation id="5806208250835099572">Brave Shields protects your online privacy on every site.</translation>
-<translation id="5617673581653540121">Your connection is now encrypted.</translation>
-<translation id="4055107796760496928">If available, Brave upgrades you to a secure connection automatically.</translation>
-<translation id="8869714780588464835">Share the news</translation>
 <translation id="7427391215172269363">Every day I save data by browsing the web with Brave.</translation>
-<translation id="5372054974373489308">1000 trackers &amp; ads blocked!</translation>
-<translation id="2338952568654182692">5000 trackers &amp; ads blocked!</translation>
-<translation id="5289711064670408815">10,000 trackers &amp; ads blocked!</translation>
-<translation id="7150609425870119925">25,000 trackers &amp; ads blocked!</translation>
-<translation id="7856423737692274943">75,000 trackers &amp; ads blocked!</translation>
-<translation id="7252948690584461484">100,000 trackers &amp; ads blocked!</translation>
-<translation id="7579633043057546002">250,000 trackers &amp; ads blocked!</translation>
-<translation id="8710984962087186365">500,000 trackers &amp; ads blocked!</translation>
-<translation id="4383614608366907253">1,000,000 trackers &amp; ads blocked!</translation>
-<translation id="6819535527112707811">Congratulations, you're pretty special.</translation>
-<translation id="5819231438994979709">Congratulations. You’re part of an exclusive club.</translation>
-<translation id="5174835622895450943">Congratulations. You joined the pros.</translation>
-<translation id="4625546020186631261">Congratulations. You’ve become a master.</translation>
-<translation id="4288835546846020774">Congratulations. You’ve become a Grand Master.</translation>
-<translation id="6863752373888328811">Congratulations. You are legendary.</translation>
 <translation id="4776948189086901857">Brave works everywhere</translation>
 <translation id="1606322780901645965">Download Brave at brave.com on your laptop or tablet for a faster and more private web</translation>
 <translation id="8374242949413616101">Privacy protection</translation>
@@ -414,9 +399,6 @@ Are you sure you want to do this?</translation>
 <translation id="2252497442547961651">Brave browser uses 40% less battery on average.🔋</translation>
 <translation id="1945330434665345785">You blocked <ph name="COUNT"/> trackers &amp; ads with Brave browser last week.</translation>
 <translation id="2883868922264431515">Earn tokens by viewing privacy-respecting ads and support your favourite websites.</translation>
-<translation id="5678925890616256956">Nice! You've blocked 250 trackers &amp; ads with Brave browser.🔥</translation>
-<translation id="9199047775708635708">Nice! You've saved 10 MB with Brave browser.🔋</translation>
-<translation id="1880168210969863408">Nice! You've saved 10 mins of loading time with Brave browser.💨💨</translation>
 <translation id="7408493389591475748">Start browsing to see privacy reporting</translation>
 <translation id="9080777565335515917">Set Brave as your default browser for private and secure browsing.</translation>
 <translation id="1390943217516275883">Allows Brave to show your privacy statistics</translation>
@@ -443,7 +425,6 @@ Are you sure you want to do this?</translation>
 <translation id="2735834606413553397">Public address has been copied to the clipboard.</translation>
 <translation id="7144878232160441200">Retry</translation>
 <translation id="2977461003134694205">Privacy Stats</translation>
-<translation id="6966052266404721769">Binance</translation>
 <translation id="2956070106555335453">Summary</translation>
 <translation id="1366855498335432549">Deposit</translation>
 <translation id="1301340234286078471">Convert</translation>
@@ -516,16 +497,8 @@ Are you sure you want to do this?</translation>
 <translation id="2642661895835126239">Plants trees, based in Berlin</translation>
 <translation id="177282784098234156">Private, independent, user-first</translation>
 <translation id="1410130669636877548">Some search engines protect your privacy better than others when you search the web.</translation>
-<translation id="1078265935778232285">Welcome to Brave Browser</translation>
-<translation id="6824713633331856331">Help us learn anonymously</translation>
-<translation id="6116685031674149112">Brave protects your privacy and\nappreciates your consent to the following:</translation>
-<translation id="4394483075076204916">Help improve Brave by sending completely anonymized <ph name="PRIVATE_PRODUCT_ANALYSIS"/></translation>
-<translation id="6478996494082389936">private product analytics.</translation>
 <translation id="5187052478998910855">Need a refresher on Rewards?</translation>
 <translation id="8622329973403382303">Take a quick tour to brush up on how it works to go down in history as a Rewards rockstar!</translation>
-<translation id="7625138338483121345">Make Brave your default browser</translation>
-<translation id="4511485286950743564">With Brave as default, every link you click opens with Brave’s privacy protections.</translation>
-<translation id="9218430445555521422">Set as default</translation>
 <translation id="3479552764303398839">Not now</translation>
 <translation id="4956847150856741762">1</translation>
 <translation id="5196716972587102051">2</translation>
@@ -589,7 +562,7 @@ Are you sure you want to do this?</translation>
 <translation id="5493402808936397665">Enable biometrics to quickly unlock your wallet without entering your password.</translation>
 <translation id="8030647312184163932">Fingerprint unlock</translation>
 <translation id="4090490645603511157">Use biometrics to quickly unlock your wallet without entering your password.</translation>
-<translation id="5379398699598690674">Wallet (beta)</translation>
+<translation id="1544192797660353713">Wallet</translation>
 <translation id="6901810042765869341">Enter your recovery phrase to restore your Brave Wallet crypto account.</translation>
 <translation id="9120654436199628567">Restore crypto account</translation>
 <translation id="4811736040444856406">Show recovery phrase</translation>
@@ -653,7 +626,7 @@ Are you sure you want to do this?</translation>
 <translation id="8239147115686034860">Automatically lock Brave Wallet</translation>
 <translation id="414639769490080648">The number of minutes to wait until the Brave Wallet is automatically locked</translation>
 <translation id="4993345308607970390">Reset Brave Wallet</translation>
-<translation id="6369495274982305511">Are you sure you want to reset your wallet? If your wallet is not backed up, resetting will cause you to lose all account data (including any associated funds). Type "<ph name="CONFIRMATION_PHRASE"/>" to confirm.</translation>
+<translation id="4322846864135539519">Are you sure you want to reset your Brave Rewards? If your wallet is not backed up, resetting will cause you to lose all account data (including any associated funds). Type "<ph name="CONFIRMATION_PHRASE"/>" to confirm.</translation>
 <translation id="4862812525895306758">Clear transaction &amp; nonce info</translation>
 <translation id="5693968582510626466">Clearing transactions may be useful for developers or when clearing state on a local server</translation>
 <translation id="5421107279168565467">Are you sure you want to reset transaction and nonce information? This option is mostly used by developers running a local test server. Type "<ph name="CONFIRMATION_PHRASE"/>" to confirm.</translation>
@@ -673,8 +646,8 @@ Are you sure you want to do this?</translation>
 <translation id="1190117345570417902">Uses Wireguard secure encrypted VPN tunnel</translation>
 <translation id="1571230671455380494">We never share or sell your info</translation>
 <translation id="276866628038850725">All plans include a free 7-day trial.</translation>
-<translation id="7280825497485894053">Monthly subscription</translation>
-<translation id="3001303523417455986">Yearly subscription</translation>
+<translation id="1532536259167115948">Monthly subscription <ph name="TRIAL_TEXT"/></translation>
+<translation id="6344668702581136255">Yearly subscription <ph name="TRIAL_TEXT"/></translation>
 <translation id="6748319398471481216">Renews monthly</translation>
 <translation id="7734634586133069282"><ph name="MONTHLY_AMOUNT"/> / mo.</translation>
 <translation id="1163809943099641131">One year</translation>
@@ -695,8 +668,7 @@ Are you sure you want to do this?</translation>
 If you don't accept this request, VPN will not reconnect and your Internet connection will not be secured.</translation>
 <translation id="2429299231491852747">Accept connection request</translation>
 <translation id="3428909627460825679">Vpn profile creation failed. Please try again.</translation>
-<translation id="1326227401245340613">Purchase verification failed. Please try again.</translation>
-<translation id="8905950042180169719">VPN is running in the background</translation>
+<translation id="1264320790738638119">Your subscription has expired. You can subscribe again at any time.</translation>
 <translation id="8681480718817027245">Subscription</translation>
 <translation id="7805768142964895445">Status</translation>
 <translation id="5747552184818312860">Expires</translation>
@@ -724,15 +696,15 @@ If you don't accept this request, VPN will not reconnect and your Internet conne
 <translation id="1219475260382643267">Website doesn't work</translation>
 <translation id="7138678301420049075">Other</translation>
 <translation id="4827315939627587219">Reset VPN configuration</translation>
-<translation id="6883280223123252086">Are you sure you want to reset vpn configuration?</translation>
+<translation id="1705662265912724430">Are you sure you want to reset VPN configuration?</translation>
 <translation id="604124094241169006">Automatic</translation>
 <translation id="7475580600756356589">Connecting to your server. Should only take a moment ...</translation>
 <translation id="1342728075788541348">Disconnecting from your server. Should only take a moment ...</translation>
 <translation id="669072536454692117">Subscription successfully consumed</translation>
 <translation id="1187506504156101449">Failed to acknowledge purchase:</translation>
 <translation id="8420522105268941892">You are already subscribed to the subscription. Try restoring the subscription.</translation>
-<translation id="74771564105268111">ERROR!!\nCaused by a user cancelling the purchase flow.</translation>
-<translation id="7312462922610983743">ERROR!!\nPurchase failed.</translation>
+<translation id="404414664190867625">You've quit your subscription purchase.</translation>
+<translation id="3515141458161417228">Purchase failed. Please contact Google Play support.</translation>
 <translation id="6452181791372256707">Reject</translation>
 <translation id="8030852056903932865">Approve</translation>
 <translation id="1597199892790541240">Gas Fee</translation>
@@ -767,6 +739,7 @@ If you don't accept this request, VPN will not reconnect and your Internet conne
 <translation id="2199215899212542417">FUNCTION TYPE: <ph name="FTYPE"/></translation>
 <translation id="4803003663447398145">No data</translation>
 <translation id="9061799688859969073"><ph name="ACCOUNT_NAME"/> sent <ph name="CRYPTO_VALUE"/> <ph name="ASSET"/> ($<ph name="FIAT_VALUE"/>) - <ph name="DATE"/></translation>
+<translation id="1148985422232712046"><ph name="ACCOUNT_NAME"/> sent <ph name="ASSET"/> #<ph name="ASSET_ID"/> - <ph name="DATE"/></translation>
 <translation id="2911329628253651823"><ph name="ACCOUNT_NAME"/> approved <ph name="ASSET"/> - <ph name="DATE"/></translation>
 <translation id="7400134344541309180">Approved Unlimited <ph name="ASSET"/> - <ph name="PROXY"/></translation>
 <translation id="2428770727194227378"><ph name="ACCOUNT_NAME"/> swap - <ph name="DATE"/></translation>
@@ -822,7 +795,6 @@ If you don't accept this request, VPN will not reconnect and your Internet conne
 <translation id="3494964159182650590">Rewards Summary</translation>
 <translation id="590733288489975971">Rewards from Ads</translation>
 <translation id="207268487070188114">One-time tip</translation>
-<translation id="64394831139134288">My wallet</translation>
 <translation id="8494748383523030337">Your balance</translation>
 <translation id="7091980679045978090">Estimated earnings</translation>
 <translation id="1346059596910821859">Tip</translation>
@@ -832,6 +804,7 @@ If you don't accept this request, VPN will not reconnect and your Internet conne
 <translation id="7732576862074737148">≈ <ph name="VALUE"/> USD</translation>
 <translation id="3079421456571897484"><ph name="VALUE"/> BAT</translation>
 <translation id="5802665280774361839">Show autocomplete in address bar</translation>
+<translation id="8982438328166986164">Displays website suggestions based on your bookmarks and browsing history.</translation>
 <translation id="1241283133946520352">Networks</translation>
 <translation id="1062463687579789365">Wallet networks customisation</translation>
 <translation id="2512821599885971349">Add network</translation>
@@ -866,7 +839,6 @@ If you don't accept this request, VPN will not reconnect and your Internet conne
 <translation id="3586752056660754651">Sign</translation>
 <translation id="6592721981110586529">Connect with Brave Wallet</translation>
 <translation id="329813193938846695">Select account(s)</translation>
-<translation id="3890989020011724401">New account</translation>
 <translation id="291375746846291973">Only connect with sites you trust.</translation>
 <translation id="385051799172605136">Back</translation>
 <translation id="1060221736464994328">Allow this site to switch the network?</translation>
@@ -883,22 +855,32 @@ If you don't accept this request, VPN will not reconnect and your Internet conne
 <translation id="85136472535634474">Open VPN settings</translation>
 <translation id="8352805003811526272">Resetting configuration ...</translation>
 <translation id="6809312301323611382">You have already selected the same server.</translation>
-<translation id="7694991972030057904">Permission was cancelled</translation>
+<translation id="5665084657857645952">You've stopped the installation of the VPN profile.</translation>
 <translation id="9106265941552476098">Reject <ph name="TRANSACTION_LENGTH"/> transactions</translation>
 <translation id="523862956770478816">Site permissions</translation>
 <translation id="2141313140218636977"><ph name="VALUE"/> accounts connected</translation>
+<translation id="3890989020011724401">New account</translation>
 <translation id="4305817255990598646">Switch</translation>
 <translation id="4804818685124855865">Disconnect</translation>
 <translation id="8009571545960303544">Your signature is being requested</translation>
+<translation id="3484981968509595506">A DApp is requesting your public encryption key</translation>
+<translation id="2291002548681057345">is requesting your wallets public encryption key. If you consent to providing this key, the site will be able to compose encrypted messages to you.</translation>
+<translation id="3340247553212049934">Provide</translation>
 <translation id="1982257600591932657">Network name</translation>
 <translation id="5052727830821470769">Network URL</translation>
 <translation id="4822132585477111396">Chain ID</translation>
 <translation id="7131971375297699539">Currency symbol</translation>
 <translation id="7982789257301363584">Network</translation>
-<translation id="2521480044079508357">This will allow this network to be used within Brave Wallet.</translation>
+<translation id="7540715999708954128">This will allow this network to be used within Brave Wallet. Learn more.</translation>
+<translation id="8759753423332885148">Learn more.</translation>
 <translation id="4717431746210146708">Allow this site to add a network?</translation>
 <translation id="3378339846292573874">Add suggested token</translation>
 <translation id="2322227405137827074">Would you like to import this token?</translation>
 <translation id="1324417023773393937">Brave Browser</translation>
 <translation id="6044189892950611565">Notification channel for Brave browser</translation>
+<translation id="1173919438868967364">Select account</translation>
+<translation id="8922793255489232731">Couldn't get matching timezone for : <ph name="VALUE"/></translation>
+<translation id="8231907121684689093">Show top sites</translation>
+<translation id="6471216025161697462">Connected to <ph name="VALUE"/></translation>
+<translation id="1968852757206592413">Trial</translation>
 </translationbundle>

@@ -10,7 +10,6 @@
 #include "base/containers/stack.h"
 #include "base/guid.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/task/post_task.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/task/thread_pool.h"
 #include "brave/ios/browser/api/bookmarks/bookmark_model_listener_ios.h"
@@ -618,13 +617,14 @@
   __weak BraveBookmarksAPI* weak_bookmarks_api = self;
   auto search_with_query =
       ^(NSString* query, NSUInteger maxCount,
-        std::function<void(NSArray<IOSBookmarkNode*>*)> completion) {
+        void (^completion)(NSArray<IOSBookmarkNode*>*)) {
         BraveBookmarksAPI* bookmarks_api = weak_bookmarks_api;
         if (!bookmarks_api) {
           completion(@[]);
           return;
         }
 
+        DCHECK_CURRENTLY_ON(web::WebThread::UI);
         DCHECK(bookmarks_api->bookmark_model_->loaded());
 
         bookmarks::QueryFields queryFields;
@@ -644,8 +644,8 @@
         completion(nodes);
       };
 
-  base::PostTask(
-      FROM_HERE, {web::WebThread::UI},
+  web::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE,
       base::BindOnce(search_with_query, query, maxCount, completion));
 }
 

@@ -12,7 +12,6 @@
 #include "base/containers/flat_map.h"
 #include "base/logging.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/task/post_task.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/task/task_runner_util.h"
 #include "base/task/thread_pool.h"
@@ -238,6 +237,7 @@ BATClassAdsBridge(BOOL, isDebug, setDebug, g_is_debug)
 }
 
 + (void)setSysInfo:(AdsSysInfo*)sysInfo {
+  ads::SysInfo().did_override_command_line_args_flag = false;
   ads::SysInfo().is_uncertain_future = sysInfo.isUncertainFuture;
 }
 
@@ -650,11 +650,13 @@ BATClassAdsBridge(BOOL, isDebug, setDebug, g_is_debug)
       static_cast<ads::mojom::PromotedContentAdEventType>(eventType));
 }
 
-- (void)purgeOrphanedAdEvents:(AdsAdType)adType {
+- (void)purgeOrphanedAdEvents:(AdsAdType)adType
+                   completion:(void (^)(BOOL success))completion {
   if (![self isAdsServiceRunning]) {
     return;
   }
-  ads->PurgeOrphanedAdEventsForType(static_cast<ads::mojom::AdType>(adType));
+  ads->PurgeOrphanedAdEventsForType(static_cast<ads::mojom::AdType>(adType),
+                                    completion);
 }
 
 - (void)detailsForCurrentCycle:(void (^)(NSInteger adsReceived,

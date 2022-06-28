@@ -6,14 +6,11 @@
 #include "brave/browser/themes/theme_properties.h"
 
 #include "base/notreached.h"
+#include "brave/browser/ui/color/color_palette.h"
 #include "chrome/browser/themes/theme_properties.h"
 #include "ui/gfx/color_palette.h"
 
 namespace {
-
-const SkColor kLightToolbar = SkColorSetRGB(0xf3, 0xf3, 0xf3);
-const SkColor kLightFrame = SkColorSetRGB(0xd5, 0xd9, 0xdc);
-const SkColor kLightToolbarIcon = SkColorSetRGB(0x42, 0x42, 0x42);
 
 absl::optional<SkColor> MaybeGetDefaultColorForBraveLightUi(int id) {
   switch (id) {
@@ -27,7 +24,7 @@ absl::optional<SkColor> MaybeGetDefaultColorForBraveLightUi(int id) {
     // except active tab
     case ThemeProperties::COLOR_FRAME_INACTIVE:
     case ThemeProperties::COLOR_TAB_BACKGROUND_INACTIVE_FRAME_INACTIVE:
-      return color_utils::HSLShift(kLightFrame, { -1, -1, 0.6 });
+      return color_utils::HSLShift(kLightFrame, {-1, -1, 0.6});
     // Active tab and also the URL toolbar
     // Parts of this color show up as you hover over innactive tabs too
     case ThemeProperties::COLOR_TOOLBAR:
@@ -46,8 +43,6 @@ absl::optional<SkColor> MaybeGetDefaultColorForBraveLightUi(int id) {
       return kLightToolbarIcon;
     case ThemeProperties::COLOR_TOOLBAR_BUTTON_ICON_INACTIVE:
       return color_utils::AlphaBlend(kLightToolbarIcon, kLightToolbar, 0.3f);
-    case ThemeProperties::COLOR_DOWNLOAD_SHELF_BUTTON_TEXT:
-      return gfx::kBraveGrey800;  // 0x3b, 0x3e, 0x4f
     case BraveThemeProperties::COLOR_ICON_BASE:
       return SkColorSetRGB(0x49, 0x50, 0x57);
     case BraveThemeProperties::COLOR_TOGGLE_BUTTON_THUMB_ON_COLOR:
@@ -100,16 +95,38 @@ absl::optional<SkColor> MaybeGetDefaultColorForBraveLightUi(int id) {
     case BraveThemeProperties::COLOR_BRAVE_VPN_BUTTON_TEXT_DISCONNECTED:
       return SkColorSetRGB(0x86, 0x8E, 0x96);
 #endif
+    case BraveThemeProperties::COLOR_SEARCH_CONVERSION_BANNER_TYPE_DESC_TEXT:
+      return SkColorSetRGB(0x2E, 0x30, 0x39);
+    case BraveThemeProperties::
+        COLOR_SEARCH_CONVERSION_BANNER_TYPE_BACKGROUND_BORDER:
+      return SkColorSetRGB(0xE2, 0xE3, 0xF8);
+    case BraveThemeProperties::
+        COLOR_SEARCH_CONVERSION_BANNER_TYPE_BACKGROUND_BORDER_HOVERED:
+      return SkColorSetRGB(0x83, 0x89, 0xE0);
+    case BraveThemeProperties::
+        COLOR_SEARCH_CONVERSION_BANNER_TYPE_BACKGROUND_GRADIENT_FROM:
+      return SkColorSetARGB(104, 0xFF, 0xFF, 0xFF);
+    case BraveThemeProperties::
+        COLOR_SEARCH_CONVERSION_BANNER_TYPE_BACKGROUND_GRADIENT_TO:
+      return SkColorSetARGB(104, 0xEF, 0xEF, 0xFB);
+    case BraveThemeProperties::COLOR_SEARCH_CONVERSION_BUTTON_TYPE_INPUT_APPEND:
+      return SkColorSetRGB(0x58, 0x5C, 0x6D);
+    case BraveThemeProperties::
+        COLOR_SEARCH_CONVERSION_BUTTON_TYPE_BACKGROUND_NORMAL:
+      return SkColorSetRGB(0xED, 0xEE, 0xFA);
+    case BraveThemeProperties::
+        COLOR_SEARCH_CONVERSION_BUTTON_TYPE_BACKGROUND_HOVERED:
+      return SkColorSetRGB(0xE2, 0xE3, 0xF8);
+    case BraveThemeProperties::COLOR_SEARCH_CONVERSION_BUTTON_TYPE_DESC_NORMAL:
+      return SkColorSetRGB(0x44, 0x4d, 0xd0);
+    case BraveThemeProperties::COLOR_SEARCH_CONVERSION_BUTTON_TYPE_DESC_HOVERED:
+      return SkColorSetRGB(0x1F, 0x25, 0x7A);
     case BraveThemeProperties::COLOR_FOR_TEST:
       return BraveThemeProperties::kLightColorForTest;
     default:
       return absl::nullopt;
   }
 }
-
-const SkColor kDarkToolbar = SkColorSetRGB(0x30, 0x34, 0x43);
-const SkColor kDarkFrame = SkColorSetRGB(0x0C, 0x0C, 0x17);
-const SkColor kDarkToolbarIcon = SkColorSetRGB(0xed, 0xed, 0xed);
 
 absl::optional<SkColor> MaybeGetDefaultColorForBraveDarkUi(int id) {
   switch (id) {
@@ -122,7 +139,7 @@ absl::optional<SkColor> MaybeGetDefaultColorForBraveDarkUi(int id) {
     // except active tab
     case ThemeProperties::COLOR_FRAME_INACTIVE:
     case ThemeProperties::COLOR_TAB_BACKGROUND_INACTIVE_FRAME_INACTIVE:
-      return color_utils::HSLShift(kDarkFrame, { -1, -1, 0.6 });
+      return color_utils::HSLShift(kDarkFrame, {-1, -1, 0.6});
     // Active tab and also the URL toolbar
     // Parts of this color show up as you hover over innactive tabs too
     case ThemeProperties::COLOR_TOOLBAR:
@@ -144,8 +161,6 @@ absl::optional<SkColor> MaybeGetDefaultColorForBraveDarkUi(int id) {
       return kDarkToolbarIcon;
     case ThemeProperties::COLOR_TOOLBAR_BUTTON_ICON_INACTIVE:
       return color_utils::AlphaBlend(kDarkToolbarIcon, kDarkToolbar, 0.3f);
-    case ThemeProperties::COLOR_DOWNLOAD_SHELF_BUTTON_TEXT:
-      return SK_ColorWHITE;
     case BraveThemeProperties::COLOR_ICON_BASE:
       return SkColorSetRGB(0xC2, 0xC4, 0xCF);
     case BraveThemeProperties::COLOR_TOGGLE_BUTTON_THUMB_ON_COLOR:
@@ -198,15 +213,38 @@ absl::optional<SkColor> MaybeGetDefaultColorForBraveDarkUi(int id) {
     case BraveThemeProperties::COLOR_BRAVE_VPN_BUTTON_TEXT_DISCONNECTED:
       return SkColorSetRGB(0xF0, 0xF2, 0xFF);
 #endif
+    case BraveThemeProperties::COLOR_SEARCH_CONVERSION_BANNER_TYPE_DESC_TEXT:
+      return SkColorSetRGB(0xE2, 0xE3, 0xE7);
+    case BraveThemeProperties::
+        COLOR_SEARCH_CONVERSION_BANNER_TYPE_BACKGROUND_BORDER:
+      return SkColorSetRGB(0x1F, 0x25, 0x7A);
+    case BraveThemeProperties::
+        COLOR_SEARCH_CONVERSION_BANNER_TYPE_BACKGROUND_BORDER_HOVERED:
+      return SkColorSetRGB(0x5F, 0x67, 0xD7);
+    case BraveThemeProperties::
+        COLOR_SEARCH_CONVERSION_BANNER_TYPE_BACKGROUND_GRADIENT_FROM:
+      return SkColorSetARGB(104, 0x17, 0x19, 0x1E);
+    case BraveThemeProperties::
+        COLOR_SEARCH_CONVERSION_BANNER_TYPE_BACKGROUND_GRADIENT_TO:
+      return SkColorSetARGB(104, 0x1F, 0x25, 0x7A);
+    case BraveThemeProperties::COLOR_SEARCH_CONVERSION_BUTTON_TYPE_INPUT_APPEND:
+      return SkColorSetRGB(0xAC, 0xAF, 0xBB);
+    case BraveThemeProperties::
+        COLOR_SEARCH_CONVERSION_BUTTON_TYPE_BACKGROUND_NORMAL:
+      return SkColorSetRGB(0x1A, 0x1C, 0x3B);
+    case BraveThemeProperties::
+        COLOR_SEARCH_CONVERSION_BUTTON_TYPE_BACKGROUND_HOVERED:
+      return SkColorSetRGB(0x1F, 0x25, 0x7A);
+    case BraveThemeProperties::COLOR_SEARCH_CONVERSION_BUTTON_TYPE_DESC_NORMAL:
+      return SkColorSetRGB(0xA6, 0xAB, 0xE9);
+    case BraveThemeProperties::COLOR_SEARCH_CONVERSION_BUTTON_TYPE_DESC_HOVERED:
+      return SkColorSetRGB(0xE2, 0xE3, 0xF8);
     case BraveThemeProperties::COLOR_FOR_TEST:
       return BraveThemeProperties::kDarkColorForTest;
     default:
       return absl::nullopt;
   }
 }
-
-const SkColor kPrivateFrame = SkColorSetRGB(0x19, 0x16, 0x2F);
-const SkColor kPrivateToolbar = SkColorSetRGB(0x32, 0x25, 0x60);
 
 absl::optional<SkColor> MaybeGetDefaultColorForPrivateUi(int id) {
   switch (id) {
@@ -219,7 +257,7 @@ absl::optional<SkColor> MaybeGetDefaultColorForPrivateUi(int id) {
     // except active tab
     case ThemeProperties::COLOR_FRAME_INACTIVE:
     case ThemeProperties::COLOR_TAB_BACKGROUND_INACTIVE_FRAME_INACTIVE:
-      return color_utils::HSLShift(kPrivateFrame, { -1, -1, 0.55 });
+      return color_utils::HSLShift(kPrivateFrame, {-1, -1, 0.55});
     // Active tab and also the URL toolbar
     // Parts of this color show up as you hover over innactive tabs too
     case ThemeProperties::COLOR_TOOLBAR:
@@ -245,8 +283,6 @@ absl::optional<SkColor> MaybeGetDefaultColorForPrivateUi(int id) {
   }
 }
 
-const SkColor kPrivateTorFrame = SkColorSetRGB(0x19, 0x0E, 0x2A);
-const SkColor kPrivateTorToolbar = SkColorSetRGB(0x49, 0x2D, 0x58);
 absl::optional<SkColor> MaybeGetDefaultColorForPrivateTorUi(int id) {
   switch (id) {
     // Applies when the window is active, tabs and also tab bar everywhere
@@ -258,7 +294,7 @@ absl::optional<SkColor> MaybeGetDefaultColorForPrivateTorUi(int id) {
     // except active tab
     case ThemeProperties::COLOR_FRAME_INACTIVE:
     case ThemeProperties::COLOR_TAB_BACKGROUND_INACTIVE_FRAME_INACTIVE:
-      return color_utils::HSLShift(kPrivateTorFrame, { -1, -1, 0.55 });
+      return color_utils::HSLShift(kPrivateTorFrame, {-1, -1, 0.55});
     // Active tab and also the URL toolbar
     // Parts of this color show up as you hover over innactive tabs too
     case ThemeProperties::COLOR_TOOLBAR:

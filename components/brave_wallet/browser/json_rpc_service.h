@@ -18,6 +18,7 @@
 #include "base/observer_list_threadsafe.h"
 #include "brave/components/api_request_helper/api_request_helper.h"
 #include "brave/components/brave_wallet/browser/brave_wallet_constants.h"
+#include "brave/components/brave_wallet/browser/solana_transaction.h"
 #include "brave/components/brave_wallet/common/brave_wallet.mojom.h"
 #include "brave/components/brave_wallet/common/brave_wallet_types.h"
 #include "components/keyed_service/core/keyed_service.h"
@@ -196,6 +197,12 @@ class JsonRpcService : public KeyedService, public mojom::JsonRpcService {
                                          const url::Origin& origin) override;
   void GetAllNetworks(mojom::CoinType coin,
                       GetAllNetworksCallback callback) override;
+  void GetCustomNetworks(mojom::CoinType coin,
+                         GetCustomNetworksCallback callback) override;
+  void GetKnownNetworks(mojom::CoinType coin,
+                        GetKnownNetworksCallback callback) override;
+  void GetHiddenNetworks(mojom::CoinType coin,
+                         GetHiddenNetworksCallback callback) override;
   std::string GetNetworkUrl(mojom::CoinType coin) const;
   void GetNetworkUrl(
       mojom::CoinType coin,
@@ -325,8 +332,10 @@ class JsonRpcService : public KeyedService, public mojom::JsonRpcService {
       base::OnceCallback<void(const std::string& tx_hash,
                               mojom::SolanaProviderError error,
                               const std::string& error_message)>;
-  void SendSolanaTransaction(const std::string& signed_tx,
-                             SendSolanaTransactionCallback callback);
+  void SendSolanaTransaction(
+      const std::string& signed_tx,
+      absl::optional<SolanaTransaction::SendOptions> send_options,
+      SendSolanaTransactionCallback callback);
   using GetSolanaLatestBlockhashCallback =
       base::OnceCallback<void(const std::string& latest_blockhash,
                               uint64_t last_valid_block_height,

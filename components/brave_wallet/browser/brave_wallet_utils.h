@@ -26,6 +26,7 @@ namespace brave_wallet {
 
 bool IsNativeWalletEnabled();
 bool IsFilecoinEnabled();
+bool IsFilecoinTestnetEnabled();
 bool IsSolanaEnabled();
 bool IsDappsSupportEnabled();
 
@@ -122,6 +123,15 @@ void AddCustomNetwork(PrefService* prefs, const mojom::NetworkInfo& chain);
 void RemoveCustomNetwork(PrefService* prefs,
                          const std::string& chain_id_to_remove);
 
+std::vector<std::string> GetAllHiddenNetworks(PrefService* prefs,
+                                              mojom::CoinType coin);
+void AddHiddenNetwork(PrefService* prefs,
+                      mojom::CoinType coin,
+                      const std::string& chain_id);
+void RemoveHiddenNetwork(PrefService* prefs,
+                         mojom::CoinType coin,
+                         const std::string& chain_id);
+
 // Get a specific chain from all chains for certain coin.
 mojom::NetworkInfoPtr GetChain(PrefService* prefs,
                                const std::string& chain_id,
@@ -129,8 +139,6 @@ mojom::NetworkInfoPtr GetChain(PrefService* prefs,
 
 // Get the current chain ID for coin from kBraveWalletSelectedNetworks pref.
 std::string GetCurrentChainId(PrefService* prefs, mojom::CoinType coin);
-
-std::string GetCurrentFilecoinNetworkPrefix(PrefService* prefs);
 
 // Returns the first URL to use that:
 // 1. Has no variables in it like ${INFURA_API_KEY}
@@ -151,9 +159,6 @@ std::string GetWeb3ClientVersion();
 std::string eTLDPlusOne(const url::Origin& origin);
 
 mojom::OriginInfoPtr MakeOriginInfo(const url::Origin& origin);
-
-absl::optional<ContentSettingsType> CoinTypeToContentSettingsType(
-    mojom::CoinType coin_type);
 
 }  // namespace brave_wallet
 

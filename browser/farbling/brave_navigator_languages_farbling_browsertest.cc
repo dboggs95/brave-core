@@ -5,7 +5,6 @@
 
 #include "base/path_service.h"
 #include "base/strings/stringprintf.h"
-#include "base/task/post_task.h"
 #include "base/test/thread_test_helper.h"
 #include "brave/browser/brave_browser_process.h"
 #include "brave/browser/brave_content_browser_client.h"
@@ -38,17 +37,19 @@
 #include "third_party/blink/renderer/core/frame/navigator_language.h"
 
 using brave_shields::ControlType;
+using brave_shields::features::kBraveReduceLanguage;
 using content::TitleWatcher;
 
 namespace {
 const char kNavigatorLanguagesScript[] = "navigator.languages.toString()";
 const uint64_t kTestingSessionToken = 12345;
-}
+}  // namespace
 
 class BraveNavigatorLanguagesFarblingBrowserTest : public InProcessBrowserTest {
  public:
   BraveNavigatorLanguagesFarblingBrowserTest()
       : https_server_(net::EmbeddedTestServer::TYPE_HTTPS) {
+    feature_list_.InitAndEnableFeature(kBraveReduceLanguage);
     brave::RegisterPathProvider();
     base::FilePath test_data_dir;
     base::PathService::Get(brave::DIR_TEST_DATA, &test_data_dir);
@@ -235,9 +236,9 @@ IN_PROC_BROWSER_TEST_F(BraveNavigatorLanguagesFarblingBrowserTest,
 IN_PROC_BROWSER_TEST_F(BraveNavigatorLanguagesFarblingBrowserTest,
                        FarbleHTTPAcceptLanguage) {
   std::string domain_b = "b.test";
-  std::string domain_c = "c.test";
+  std::string domain_d = "d.test";
   GURL url_b = https_server_.GetURL(domain_b, "/simple.html");
-  GURL url_c = https_server_.GetURL(domain_c, "/simple.html");
+  GURL url_d = https_server_.GetURL(domain_d, "/simple.html");
   SetAcceptLanguages("la,es,en");
 
   // Farbling level: off
@@ -245,23 +246,23 @@ IN_PROC_BROWSER_TEST_F(BraveNavigatorLanguagesFarblingBrowserTest,
   AllowFingerprinting(domain_b);
   SetExpectedHTTPAcceptLanguage("la,es;q=0.9,en;q=0.8");
   NavigateToURLUntilLoadStop(url_b);
-  AllowFingerprinting(domain_c);
-  NavigateToURLUntilLoadStop(url_c);
+  AllowFingerprinting(domain_d);
+  NavigateToURLUntilLoadStop(url_d);
 
   // Farbling level: default
   // HTTP Accept-Language header should be farbled by domain.
   SetFingerprintingDefault(domain_b);
-  SetExpectedHTTPAcceptLanguage("la;q=0.6");
+  SetExpectedHTTPAcceptLanguage("la;q=0.7");
   NavigateToURLUntilLoadStop(url_b);
-  SetExpectedHTTPAcceptLanguage("la;q=0.5");
-  SetFingerprintingDefault(domain_c);
-  NavigateToURLUntilLoadStop(url_c);
+  SetExpectedHTTPAcceptLanguage("la;q=0.8");
+  SetFingerprintingDefault(domain_d);
+  NavigateToURLUntilLoadStop(url_d);
 
   // Farbling level: maximum
   // HTTP Accept-Language header should be farbled but the same across domains.
   BlockFingerprinting(domain_b);
   SetExpectedHTTPAcceptLanguage("en-US,en");
   NavigateToURLUntilLoadStop(url_b);
-  BlockFingerprinting(domain_c);
-  NavigateToURLUntilLoadStop(url_c);
+  BlockFingerprinting(domain_d);
+  NavigateToURLUntilLoadStop(url_d);
 }

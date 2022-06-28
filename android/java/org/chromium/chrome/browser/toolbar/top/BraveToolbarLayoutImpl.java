@@ -13,6 +13,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Canvas;
@@ -124,6 +125,7 @@ import org.chromium.components.user_prefs.UserPrefs;
 import org.chromium.content_public.browser.NavigationHandle;
 import org.chromium.ui.UiUtils;
 import org.chromium.ui.interpolators.BakedBezierInterpolator;
+import org.chromium.ui.util.ColorUtils;
 import org.chromium.ui.widget.Toast;
 import org.chromium.url.GURL;
 
@@ -169,6 +171,8 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
     private BraveShieldsContentSettingsObserver mBraveShieldsContentSettingsObserver;
     private TextView mBraveRewardsNotificationsCount;
     private ImageView mBraveRewardsOnboardingIcon;
+    private View mBraveWalletBadge;
+    private ImageView mWalletIcon;
     private boolean mShieldsLayoutIsColorBackground;
     private int mCurrentToolbarColor;
 
@@ -179,6 +183,9 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
     private PopupWindowTooltip mShieldsPopupWindowTooltip;
 
     private boolean mIsBottomToolbarVisible;
+
+    private ColorStateList mDarkModeTint;
+    private ColorStateList mLightModeTint;
 
     private final Set<Integer> mTabsWithWalletIcon =
             Collections.synchronizedSet(new HashSet<Integer>());
@@ -224,6 +231,14 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
         mBraveShieldsButton = (ImageButton) findViewById(R.id.brave_shields_button);
         mBraveRewardsButton = (ImageButton) findViewById(R.id.brave_rewards_button);
         mHomeButton = (HomeButton) findViewById(R.id.home_button);
+        mBraveWalletBadge = findViewById(R.id.wallet_notfication_badge);
+        if (mWalletLayout != null) {
+            mWalletIcon = mWalletLayout.findViewById(R.id.brave_wallet_button);
+        }
+
+        mDarkModeTint = ThemeUtils.getThemedToolbarIconTint(getContext(), false);
+        mLightModeTint =
+                ColorStateList.valueOf(ContextCompat.getColor(getContext(), R.color.brave_white));
 
         if (mHomeButton != null) {
             mHomeButton.setOnLongClickListener(this);
@@ -357,6 +372,14 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
         updateBraveShieldsButtonState(getToolbarDataProvider().getTab());
         mTabModelSelectorTabObserver = new TabModelSelectorTabObserver(selector) {
             @Override
+            protected void onTabRegistered(Tab tab) {
+                super.onTabRegistered(tab);
+                if (tab.isIncognito()) {
+                    showWalletIcon(false);
+                }
+            }
+
+            @Override
             public void onShown(Tab tab, @TabSelectionType int type) {
                 // Update shields button state when visible tab is changed.
                 updateBraveShieldsButtonState(tab);
@@ -364,6 +387,7 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
 
             @Override
             public void onPageLoadStarted(Tab tab, GURL url) {
+                showWalletIcon(false);
                 if (getToolbarDataProvider().getTab() == tab) {
                     updateBraveShieldsButtonState(tab);
                 }
@@ -425,7 +449,7 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
                             tab.getId(), tab.getUrl().getSpec());
                     if (getToolbarDataProvider().getTab() == tab) {
                         showWalletIcon(mTabsWithWalletIcon.contains(tab.getId()));
-                    } else {
+                    } else if (mWalletLayout != null) {
                         mWalletLayout.setVisibility(mTabsWithWalletIcon.contains(tab.getId())
                                         ? View.VISIBLE
                                         : View.GONE);
@@ -712,8 +736,15 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
         }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
+    public boolean isWalletIconVisible() {
+        if (mWalletLayout == null) {
+            return false;
+        }
+        return mWalletLayout.getVisibility() == View.VISIBLE;
+    }
+
     public void showWalletIcon(boolean show) {
-        assert mWalletLayout != null;
+        // The layout could be null in Custom Tabs layout
         if (mWalletLayout == null) {
             return;
         }
@@ -793,7 +824,7 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
         if (activity == null) {
             return;
         }
-        activity.showWalletPanel();
+        activity.showWalletPanel(true);
     }
 
     private void showWalletPanelInternal(View v) {
@@ -1160,6 +1191,12 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
 
     @Override
     public void onThemeColorChanged(int color, boolean shouldAnimate) {
+        if (mWalletIcon != null) {
+            ApiCompatibilityUtils.setImageTintList(mWalletIcon,
+                    !ColorUtils.shouldUseLightForegroundOnBackground(color) ? mDarkModeTint
+                                                                            : mLightModeTint);
+        }
+
         final int textBoxColor = ThemeUtils.getTextBoxColorForToolbarBackgroundInNonNativePage(
                 getContext(), color, isIncognito());
         updateModernLocationBarColorImpl(textBoxColor);
@@ -1223,7 +1260,10 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
                     ChromeColors.getDefaultThemeColor(getContext(), isIncognito()));
             mShieldsLayoutIsColorBackground = true;
         }
-        mWalletLayout.setBackgroundColor(ChromeColors.getDefaultThemeColor(getContext(), false));
+        if (mWalletLayout != null) {
+            mWalletLayout.setBackgroundColor(
+                    ChromeColors.getDefaultThemeColor(getContext(), false));
+        }
         updateModernLocationBarColorImpl(mCurrentToolbarColor);
     }
 
@@ -1245,6 +1285,11 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
                 isProgressBarVisibleSupplier, historyDelegate, partnerHomepageEnabledSupplier,
                 offlineDownloader);
         BraveMenuButtonCoordinator.setMenuFromBottom(isMenuButtonOnBottom());
+    }
+
+    public void updateWalletBadgeVisibility(boolean visible) {
+        assert mBraveWalletBadge!=null;
+        mBraveWalletBadge.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 
     public void updateMenuButtonState() {

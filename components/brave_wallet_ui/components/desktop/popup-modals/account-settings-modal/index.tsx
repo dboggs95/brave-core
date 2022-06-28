@@ -15,11 +15,12 @@ import {
   AccountSettingsNavOptions,
   HardwareAccountSettingsNavOptions
 } from '../../../../options/account-settings-nav-options'
+import { FILECOIN_FORMAT_DESCRIPTION_URL } from '../../../../common/constants/urls'
 import { reduceAddress } from '../../../../utils/reduce-address'
 import { copyToClipboard } from '../../../../utils/copy-to-clipboard'
 import { NavButton } from '../../../extension'
 import { Tooltip } from '../../../shared'
-import { getLocale } from '../../../../../common/locale'
+import { getLocale, getLocaleWithTag } from '../../../../../common/locale'
 
 // Styled Components
 import {
@@ -151,6 +152,9 @@ const AddAccountModal = (props: Props) => {
       : AccountSettingsNavOptions()
   }, [account])
 
+  const filPrivateKeyFormatDescriptionTextParts =
+      getLocaleWithTag('braveWalletFilExportPrivateKeyFormatDescription')
+
   return (
     <PopupModal title={title} onClose={onClickClose}>
       {!hideNav &&
@@ -198,6 +202,17 @@ const AddAccountModal = (props: Props) => {
             <WarningWrapper>
               <WarningText>{getLocale('braveWalletAccountSettingsDisclaimer')}</WarningText>
             </WarningWrapper>
+            {showPrivateKey && account.coin === BraveWallet.CoinType.FIL &&
+            <WarningWrapper>
+               <WarningText>
+                 {filPrivateKeyFormatDescriptionTextParts.beforeTag}
+                  <a target='_blank' href={FILECOIN_FORMAT_DESCRIPTION_URL}>
+                    {filPrivateKeyFormatDescriptionTextParts.duringTag}
+                  </a>
+                  {filPrivateKeyFormatDescriptionTextParts.afterTag}
+                </WarningText>
+            </WarningWrapper>
+            }
             {showPrivateKey &&
               <Tooltip text={getLocale('braveWalletToolTipCopyToClipboard')}>
                 <PrivateKeyBubble onClick={onCopyPrivateKey}>{privateKey}</PrivateKeyBubble>

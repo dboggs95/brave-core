@@ -170,7 +170,14 @@ interface SolanaProvider {
   // { publicKey: <base58 encoded string>,
   //   signature:  <base58 encoded string>
   // }
-  SignAndSendTransaction(string encoded_serialized_msg)
+  // Optional argument send_options:
+  //   { maxRetries?: <number>,
+  //     preflightCommitment?: <string>,
+  //     skipPreflight?: <boolean>
+  //   }
+  SignAndSendTransaction(
+      string encoded_serialized_msg,
+      mojo_base.mojom.DeprecatedDictionaryValue? send_options)
     => (SolanaProviderError error, string error_message,
         mojo_base.mojom.DeprecatedDictionaryValue result);
   // It takes a byte array and an optional display encoding for
@@ -424,10 +431,10 @@ enum OnRampProvider {
 
 // List of tokens and coins that are supported.
 interface BlockchainRegistry {
-  // Obtains token information by an address lookup
+  // Obtains token information by an address lookup.
   GetTokenByAddress(string chain_id, CoinType coin, string address) => (BlockchainToken? token);
 
-  // Obtains token information by a symbol lookup
+  // Obtains token information by a symbol lookup.
   GetTokenBySymbol(string chain_id, CoinType coin, string symbol) => (BlockchainToken? token);
 
   // Obtains all tokens Send/Swap UI
@@ -437,8 +444,11 @@ interface BlockchainRegistry {
   // Obtains all tokens for the Buy UI
   GetBuyTokens(OnRampProvider provider, string chain_id) => (array<BlockchainToken> tokens);
 
-  // Obtains the URL used for buying assets
+  // Obtains the URL used for buying assets.
   GetBuyUrl(OnRampProvider provider, string chain_id, string address, string symbol, string amount) => (string url, string? error);
+
+  // Returns networks filtered by chain_id and/or chain_name.
+  SearchNetworks(string? chain_id_filter, string? chain_name_filter) => (array<NetworkInfo> networks);
 };
 
 // Implements the HD wallet, Ledger & Trezor integration, account management,
@@ -486,10 +496,6 @@ interface KeyringService {
   // Imports an account via JSON
   ImportAccountFromJson(string accountName, string password, string json)
     => (bool success, string address);
-
-  // Obtains the private key for an imported account
-  GetPrivateKeyForImportedAccount(string address, CoinType coin)
-    => (bool success, string privateKey);
 
   // Removes an imported account
   RemoveImportedAccount(string address, CoinType coin) => (bool success);
@@ -571,10 +577,6 @@ interface AssetRatioService {
   GetPriceHistory(string asset, string vs_asset,
       AssetPriceTimeframe timeframe) =>
           (bool success, array<AssetTimePrice> values);
-
-  // Gas estimation APIs
-  GetEstimatedTime(string gas_price /* decimal string in wei */) =>
-      (bool success, string seconds);
 
   // Obtain token info via contract address through etherscan API.
   // This is only for Ethereum mainnet.
@@ -705,6 +707,20 @@ struct DecryptRequest {
   string? unsafe_message;
 };
 
+struct OptionalMaxRetries {
+  uint64 max_retries;
+};
+
+struct OptionalSkipPreflight {
+  bool skip_preflight;
+};
+
+struct SolanaSendTransactionOptions {
+  OptionalMaxRetries? max_retries;
+  string? preflight_commitment;
+  OptionalSkipPreflight? skip_preflight;
+};
+
 // Deals with the ETH JSON RPC API, as well as things like the user's current
 // network.
 interface JsonRpcService {
@@ -723,6 +739,9 @@ interface JsonRpcService {
   SetNetwork(string chain_id, CoinType coin) => (bool success);
   GetNetwork(CoinType coin) => (NetworkInfo network);
   GetAllNetworks(CoinType coin) => (array<NetworkInfo> networks);
+  GetCustomNetworks(CoinType coin) => (array<string> chain_ids);
+  GetKnownNetworks(CoinType coin) => (array<string> chain_ids);
+  GetHiddenNetworks(CoinType coin) => (array<string> chain_ids);
 
   // Obtains the current network's chain ID
   GetChainId(CoinType coin) => (string chain_id);
@@ -758,7 +777,7 @@ interface JsonRpcService {
   UnstoppableDomainsGetEthAddr(string domain) => (string address, ProviderError error, string error_message);
 
   // Used for making requests to the currently selected EVM compatible node for
-  // coin ETH and other nodes with corresponding coin types 
+  // coin ETH and other nodes with corresponding coin types
   Request(string json_payload, bool auto_retry_on_network_change, mojo_base.mojom.Value id, CoinType coin) => (mojo_base.mojom.Value id, mojo_base.mojom.Value formed_response, bool reject, string first_allowed_account, bool update_bind_js_properties);
 
   // Adds an observer for the events of JsonRpcService
@@ -1162,6 +1181,10 @@ struct SolanaTxData {
   uint64 amount;
   TransactionType tx_type;
   array<SolanaInstruction> instructions;
+
+  // Currently it might be specified by solana.signAndSendTransaction provider
+  // API as the options to be passed to sendTransaction RPC call.
+  SolanaSendTransactionOptions? send_options;
 };
 
 // This is used by BraveWalletProviderDelegate::RequestPermissions for us to

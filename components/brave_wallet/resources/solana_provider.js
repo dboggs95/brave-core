@@ -4,14 +4,18 @@
 // you can obtain one at http://mozilla.org/MPL/2.0/.
 
 (function () {
-  if (!window.solana) {
+  if (!window.braveSolana || !window.solana) {
     return
   }
   const EventEmitter = require('events')
   var SolanaEventEmitter = new EventEmitter()
-  Object.defineProperties(window.solana, {
+  Object.defineProperties(window.braveSolana, {
     on: {
       value: SolanaEventEmitter.on,
+      writable: false
+    },
+    off: {
+      value: SolanaEventEmitter.off,
       writable: false
     },
     emit: {
@@ -25,23 +29,27 @@
     removeAllListeners: {
       value: SolanaEventEmitter.removeAllListeners,
       writable: false
-    },
-    createPublickey: {
-      value: (base58Str) => {
-        console.warn('This API is intended for internal use.')
-        const solanaWeb3 = require('@solana/web3.js')
-        const result = new Object()
-        result.publicKey = new solanaWeb3.PublicKey(base58Str)
-        return result
-      },
+    }
+  })
+  Object.defineProperties(window.solana, {
+    on: {
+      value: SolanaEventEmitter.on,
       writable: false
     },
-    createTransaction: {
-      value: (serializedTx) => {
-        console.warn('This API is intended for internal use.')
-        const solanaWeb3 = require('@solana/web3.js')
-        return solanaWeb3.Transaction.from(new Uint8Array(serializedTx))
-      },
+    off: {
+      value: SolanaEventEmitter.off,
+      writable: false
+    },
+    emit: {
+      value: SolanaEventEmitter.emit,
+      writable: false
+    },
+    removeListener: {
+      value: SolanaEventEmitter.removeListener,
+      writable: false
+    },
+    removeAllListeners: {
+      value: SolanaEventEmitter.removeAllListeners,
       writable: false
     }
   })

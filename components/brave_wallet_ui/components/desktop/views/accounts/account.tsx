@@ -20,7 +20,6 @@ import {
 
 // utils
 import { reduceAddress } from '../../../../utils/reduce-address'
-import { copyToClipboard } from '../../../../utils/copy-to-clipboard'
 import { getLocale } from '../../../../../common/locale'
 import { sortTransactionByDate } from '../../../../utils/tx-utils'
 
@@ -51,10 +50,9 @@ import {
 } from '../..'
 
 // Hooks
-import { useBalance } from '../../../../common/hooks'
+import { useBalance, useCopy } from '../../../../common/hooks'
 
 // Actions
-import { WalletActions } from '../../../../common/actions'
 import { WalletPageActions } from '../../../../page/actions'
 
 export interface Props {
@@ -96,6 +94,7 @@ export const Account = (props: Props) => {
 
   // custom hooks
   const getBalance = useBalance(networkList)
+  const { copied, copyText } = useCopy()
 
   // memos
   const selectedAccount = React.useMemo(() => {
@@ -151,7 +150,7 @@ export const Account = (props: Props) => {
   // methods
   const onCopyToClipboard = React.useCallback(async () => {
     if (selectedAccount) {
-      await copyToClipboard(selectedAccount.address)
+      await copyText(selectedAccount.address)
     }
   }, [selectedAccount])
 
@@ -172,13 +171,6 @@ export const Account = (props: Props) => {
     dispatch(WalletPageActions.removeImportedAccount({ address, coin }))
   }, [])
 
-  // effects
-  React.useEffect(() => {
-    if (selectedAccount) {
-      dispatch(WalletActions.selectAccount(selectedAccount))
-    }
-  }, [selectedAccount])
-
   // redirect (asset not found)
   if (!selectedAccount) {
     return <Redirect to={WalletRoutes.Accounts} />
@@ -195,7 +187,11 @@ export const Account = (props: Props) => {
         <WalletInfoLeftSide>
           <AccountCircle orb={orb} />
           <WalletName>{selectedAccount.name}</WalletName>
-          <Tooltip text={getLocale('braveWalletToolTipCopyToClipboard')}>
+          <Tooltip
+            text={getLocale('braveWalletToolTipCopyToClipboard')}
+            actionText={getLocale('braveWalletToolTipCopiedToClipboard')}
+            isActionVisible={copied}
+          >
             <WalletAddress onClick={onCopyToClipboard}>{reduceAddress(selectedAccount.address)}</WalletAddress>
           </Tooltip>
           <Button onClick={onShowEditModal}>
