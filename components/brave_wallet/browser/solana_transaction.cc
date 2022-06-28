@@ -277,6 +277,40 @@ SolanaTransaction::GetSignedTransactionBytes(
   return transaction_bytes;
 }
 
+// Get serialized and signed transaction given a signature from a hardware
+// wallet. Only supports transactions with one signer.
+absl::optional<std::vector<uint8_t>>
+SolanaTransaction::GetSignedTransactionBytes(
+    const std::vector<uint8_t>& signature_bytes) const {
+  if (signature_bytes.size() != kSolanaSignatureSize)
+    return absl::nullopt;
+
+  // Combine the signature from hardware the message and send
+  std::vector<uint8_t> transaction_bytes;
+
+  // Add message
+  std::vector<std::string> signers;
+  auto message_bytes = message_.Serialize(&signers);
+  if (!message_bytes || signers.size() != 1)
+    return absl::nullopt;
+
+  // Add 1 signer
+  CompactU16Encode(1, &transaction_bytes);
+
+  // Add signature
+  transaction_bytes.insert(transaction_bytes.end(), signature_bytes.begin(),
+                           signature_bytes.end());
+
+  // Add message
+  transaction_bytes.insert(transaction_bytes.end(), message_bytes->begin(),
+                           message_bytes->end());
+
+  if (transaction_bytes.size() > kSolanaMaxTxSize)
+    return absl::nullopt;
+
+  return transaction_bytes;
+}
+
 std::string SolanaTransaction::GetSignedTransaction(
     KeyringService* keyring_service) const {
   auto transaction_bytes = GetSignedTransactionBytes(keyring_service);
