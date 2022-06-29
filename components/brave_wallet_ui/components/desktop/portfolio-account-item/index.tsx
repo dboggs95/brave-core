@@ -2,16 +2,16 @@ import * as React from 'react'
 import { create } from 'ethereum-blockies'
 
 // Hooks
-import { useExplorer, usePricing, useCopy } from '../../../common/hooks'
+import { useExplorer, usePricing } from '../../../common/hooks'
 
 // Utils
 import { reduceAddress } from '../../../utils/reduce-address'
 import Amount from '../../../utils/amount'
 
-import { Tooltip } from '../../shared'
 import { getLocale } from '../../../../common/locale'
 import { BraveWallet, DefaultCurrencies } from '../../../constants/types'
 import { TransactionPopup, WithHideBalancePlaceholder } from '../'
+import { CopyTooltip } from '../../shared/copy-tooltip/copy-tooltip'
 
 // Styled Components
 import {
@@ -56,13 +56,6 @@ const PortfolioAccountItem = (props: Props) => {
   } = props
   const [showAccountPopup, setShowAccountPopup] = React.useState<boolean>(false)
 
-  // custom hooks
-  const { copied, copyText } = useCopy()
-
-  const onCopyToClipboard = React.useCallback(async () => {
-    await copyText(address)
-  }, [address, copyText])
-
   const orb = React.useMemo(() => {
     return create({ seed: address.toLowerCase(), size: 8, scale: 16 }).toDataURL()
   }, [address])
@@ -92,16 +85,12 @@ const PortfolioAccountItem = (props: Props) => {
     <StyledWrapper onClick={onHideTransactionPopup}>
       <NameAndIcon>
         <AccountCircle orb={orb} />
-        <Tooltip
-          text={getLocale('braveWalletToolTipCopyToClipboard')}
-          actionText={getLocale('braveWalletToolTipCopiedToClipboard')}
-          isActionVisible={copied}
-        >
-          <AccountAndAddress onClick={onCopyToClipboard}>
+        <CopyTooltip text={address}>
+          <AccountAndAddress>
             <AccountName>{name}</AccountName>
             <AccountAddress>{reduceAddress(address)}</AccountAddress>
           </AccountAndAddress>
-        </Tooltip>
+        </CopyTooltip>
       </NameAndIcon>
       <RightSide>
         <BalanceColumn>

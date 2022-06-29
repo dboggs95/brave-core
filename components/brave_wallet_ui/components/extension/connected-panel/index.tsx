@@ -13,7 +13,7 @@ import { reduceAccountDisplayName } from '../../../utils/reduce-account-name'
 import Amount from '../../../utils/amount'
 
 // Hooks
-import { useCopy, useExplorer, usePricing } from '../../../common/hooks'
+import { useExplorer, usePricing } from '../../../common/hooks'
 
 // types
 import {
@@ -30,6 +30,7 @@ import {
   ConnectedHeader
 } from '../'
 import { Tooltip, SelectNetworkButton, LoadingSkeleton } from '../../shared'
+import { CopyTooltip } from '../../shared/copy-tooltip/copy-tooltip'
 
 // Styled Components
 import {
@@ -82,7 +83,6 @@ export const ConnectedPanel = (props: Props) => {
   // custom hooks
   const { computeFiatAmount } = usePricing(spotPrices)
   const onClickViewOnBlockExplorer = useExplorer(selectedNetwork)
-  const { copied, copyText } = useCopy()
 
   // methods
   const navigate = React.useCallback((path: PanelTypes) => () => {
@@ -106,10 +106,6 @@ export const ConnectedPanel = (props: Props) => {
       setShowMore(false)
     }
   }, [showMore])
-
-  const onCopyToClipboard = React.useCallback(async () => {
-    await copyText(selectedAccount.address)
-  }, [selectedAccount.address])
 
   // memos
   const bg = React.useMemo(() => {
@@ -169,13 +165,9 @@ export const ConnectedPanel = (props: Props) => {
             <SwitchIcon />
           </AccountCircle>
           <AccountNameText>{reduceAccountDisplayName(selectedAccount.name, 14)}</AccountNameText>
-          <Tooltip
-            text={getLocale('braveWalletToolTipCopyToClipboard')}
-            actionText={getLocale('braveWalletToolTipCopiedToClipboard')}
-            isActionVisible={copied}
-          >
-            <AccountAddressText onClick={onCopyToClipboard}>{reduceAddress(selectedAccount.address)}</AccountAddressText>
-          </Tooltip>
+          <CopyTooltip text={selectedAccount.address}>
+            <AccountAddressText>{reduceAddress(selectedAccount.address)}</AccountAddressText>
+          </CopyTooltip>
         </BalanceColumn>
         <BalanceColumn>
           {formattedAssetBalance ? (
