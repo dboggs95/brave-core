@@ -1583,13 +1583,16 @@ void AdsServiceImpl::OnLoaded(const ads::LoadCallback& callback,
     callback(/* success */ true, value);
 }
 
-void AdsServiceImpl::OnFileLoaded(ads::LoadFileCallback callback,
-                                  base::File file) {
+void AdsServiceImpl::OnFileLoaded(
+    ads::LoadFileCallback callback,
+    std::unique_ptr<base::File, base::OnTaskRunnerDeleter> file) {
+  DCHECK(file);
+
   if (!connected()) {
     return;
   }
 
-  std::move(callback).Run(std::move(file));
+  std::move(callback).Run(std::move(*file));
 }
 
 void AdsServiceImpl::OnSaved(const ads::ResultCallback& callback,
@@ -2263,11 +2266,15 @@ void AdsServiceImpl::LoadFileResource(const std::string& id,
   base::PostTaskAndReplyWithResult(
       file_task_runner_.get(), FROM_HERE,
       base::BindOnce(
-          [](const base::FilePath& file_path) {
-            return base::File(file_path, base::File::Flags::FLAG_OPEN |
-                                             base::File::Flags::FLAG_READ);
+          [](const base::FilePath& path,
+             scoped_refptr<base::SequencedTaskRunner> file_task_runner) {
+            std::unique_ptr<base::File, base::OnTaskRunnerDeleter> file(
+                new base::File(path, base::File::Flags::FLAG_OPEN |
+                                         base::File::Flags::FLAG_READ),
+                base::OnTaskRunnerDeleter(file_task_runner));
+            return file;
           },
-          file_path),
+          file_path, file_task_runner_),
       base::BindOnce(&AdsServiceImpl::OnFileLoaded, AsWeakPtr(),
                      std::move(callback)));
 }
