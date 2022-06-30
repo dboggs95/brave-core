@@ -78,9 +78,6 @@ class SolanaTransaction {
   absl::optional<std::pair<std::vector<uint8_t>, std::vector<std::string>>>
   GetSerializedMessage() const;
 
-  absl::optional<std::vector<uint8_t>> GetSignedTransactionBytes(
-      const std::vector<uint8_t>& signature_bytes) const;
-
   mojom::SolanaTxDataPtr ToSolanaTxData() const;
   base::Value ToValue() const;
 

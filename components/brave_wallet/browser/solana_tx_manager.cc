@@ -145,13 +145,14 @@ void SolanaTxManager::OnGetLatestBlockhashHardware(
   meta->tx()->message()->set_last_valid_block_height(last_valid_block_height);
   tx_state_manager_->AddOrUpdateTx(*meta);
 
-  auto message_bytes = meta->tx()->message()->Serialize(nullptr);
-  if (!message_bytes) {
+  std::vector<uint8_t> message_bytes =
+      meta->tx()->GetSerializedMessage()->first;
+  if (message_bytes.empty()) {
     std::move(callback).Run(nullptr);
   }
 
   std::move(callback).Run(
-      mojom::MessageToSignUnion::NewMessageBytes(std::move(*message_bytes)));
+      mojom::MessageToSignUnion::NewMessageBytes(std::move(message_bytes)));
 }
 
 void SolanaTxManager::OnSendSolanaTransaction(
@@ -291,6 +292,7 @@ void SolanaTxManager::GetTransactionMessageToSign(
   }
 
   const std::string blockhash = meta->tx()->message()->recent_blockhash();
+
   if (blockhash.empty()) {
     GetSolanaBlockTracker()->GetLatestBlockhash(
         base::BindOnce(&SolanaTxManager::OnGetLatestBlockhashHardware,
@@ -498,6 +500,7 @@ void SolanaTxManager::ProcessSolanaHardwareSignature(
     const std::string& tx_meta_id,
     const std::vector<uint8_t>& signature_bytes,
     ProcessSolanaHardwareSignatureCallback callback) {
+  std::vector<uint8_t> signature_bytes_copy = signature_bytes;
   std::unique_ptr<SolanaTxMeta> meta =
       GetSolanaTxStateManager()->GetSolanaTx(tx_meta_id);
   if (!meta) {
@@ -509,7 +512,8 @@ void SolanaTxManager::ProcessSolanaHardwareSignature(
     return;
   }
   absl::optional<std::vector<std::uint8_t>> transaction_bytes =
-      meta->tx()->GetSignedTransactionBytes(signature_bytes);
+      meta->tx()->GetSignedTransactionBytes(keyring_service_,
+                                            &signature_bytes_copy);
   if (!transaction_bytes) {
     std::move(callback).Run(
         false,
