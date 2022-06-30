@@ -17,6 +17,9 @@ namespace brave_search_conversion {
 
 enum class ConversionType;
 
+bool IsNTPPromotionEnabled(PrefService* prefs, TemplateURLService* service);
+
+// Promotion tyoe from omnibox.
 ConversionType GetConversionType(PrefService* prefs,
                                  TemplateURLService* service);
 void RegisterPrefs(PrefRegistrySimple* registry);
