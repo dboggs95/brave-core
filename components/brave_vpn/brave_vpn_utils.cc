@@ -15,9 +15,6 @@
 namespace brave_vpn {
 
 bool IsBraveVPNEnabled() {
-#if BUILDFLAG(IS_ANDROID)
-  return true;
-#endif
   return base::FeatureList::IsEnabled(brave_vpn::features::kBraveVPN) &&
          base::FeatureList::IsEnabled(skus::features::kSkusFeature);
 }

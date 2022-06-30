@@ -61,7 +61,6 @@ namespace brave_vpn {
 class BraveVpnService :
 #if !BUILDFLAG(IS_ANDROID)
     public BraveVPNOSConnectionAPI::Observer,
-    // TODO: Android is not using Mojom!!
 #endif
     public mojom::ServiceHandler,
     public KeyedService {
@@ -115,10 +114,10 @@ class BraveVpnService :
                            CreateSupportTicketCallback callback) override;
   void GetSupportData(GetSupportDataCallback callback) override;
 #endif  // !BUILDFLAG(IS_ANDROID)
-  // TODO(bsclifton): make android only
-  //#if !BUILDFLAG(IS_ANDROID)
+
+#if BUILDFLAG(IS_ANDROID)
   void GetPurchaseToken(GetPurchaseTokenCallback callback) override;
-  //#endif
+#endif  // BUILDFLAG(IS_ANDROID)
 
   using ResponseCallback =
       base::OnceCallback<void(const std::string&, bool success)>;

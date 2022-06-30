@@ -82,8 +82,7 @@ interface ServiceHandler {
   [EnableIfNot=is_android]
   CreateSupportTicket(string email, string subject, string body) => (bool success, string response);
 
-  // TODO(bsclifton): look at making this Android only
-  //[EnableIf=is_android]
+  [EnableIf=is_android]
   GetPurchaseToken() => (string token);
 };
 
