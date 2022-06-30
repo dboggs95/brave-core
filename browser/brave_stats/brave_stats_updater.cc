@@ -120,7 +120,8 @@ BraveStatsUpdater::BraveStatsUpdater(PrefService* pref_service)
 BraveStatsUpdater::~BraveStatsUpdater() {}
 
 void BraveStatsUpdater::OnProfileAdded(Profile* profile) {
-  if (profile == ProfileManager::GetLastUsedProfileIfLoaded()) {
+  if (profile->GetPath() ==
+      g_browser_process->profile_manager()->GetLastUsedProfileDir()) {
     g_browser_process->profile_manager()->RemoveObserver(this);
     Start();
   }

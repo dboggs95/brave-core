@@ -214,7 +214,8 @@ BraveReferralsService::BraveReferralsService(PrefService* pref_service,
 BraveReferralsService::~BraveReferralsService() {}
 
 void BraveReferralsService::OnProfileAdded(Profile* profile) {
-  if (profile == ProfileManager::GetLastUsedProfileIfLoaded()) {
+  if (profile->GetPath() ==
+      g_browser_process->profile_manager()->GetLastUsedProfileDir()) {
     g_browser_process->profile_manager()->RemoveObserver(this);
     Start();
   }
